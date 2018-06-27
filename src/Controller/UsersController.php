@@ -23,7 +23,12 @@ class UsersController extends AppController
         //$users = $this->paginate($this->Users);
 
         //$this->set(compact('users'));
-        $this->render('/Pages/home');
+        $this->render('/Pages/hpageblank');
+    }
+
+    public function showprod()
+    {
+        $this->render('/Pages/hpageprod');
     }
 
     /**
