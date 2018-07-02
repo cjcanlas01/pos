@@ -34,8 +34,8 @@ class UsersTable extends Table
         parent::initialize($config);
 
         $this->setTable('users');
-        $this->setDisplayField('id');
-        $this->setPrimaryKey('id');
+        $this->setDisplayField('username');
+        $this->setPrimaryKey('username');
 
         $this->addBehavior('Timestamp');
     }
@@ -99,16 +99,6 @@ class UsersTable extends Table
             ->maxLength('branch', 255)
             ->requirePresence('branch', 'create')
             ->notEmpty('branch');
-
-        $validator
-            ->scalar('active')
-            ->requirePresence('active', 'create')
-            ->notEmpty('active');
-
-        $validator
-            ->scalar('online')
-            ->requirePresence('online', 'create')
-            ->notEmpty('online');
 
         return $validator;
     }

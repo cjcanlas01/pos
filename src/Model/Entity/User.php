@@ -45,8 +45,6 @@ class User extends Entity
         'branch' => true,
         'created' => true,
         'modified' => true,
-        'active' => true,
-        'online' => true
     ];
 
     /**

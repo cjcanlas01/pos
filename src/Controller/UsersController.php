@@ -18,14 +18,20 @@ class UsersController extends AppController
      *
      * @return \Cake\Http\Response|void
      */
-    public function index()
+    public function blankpage()
     {
         //$users = $this->paginate($this->Users);
         //$this->set(compact('users'));
         $this->render('/Pages/hpageblank');
     }
 
-    public function showprod()
+    public function index()
+    {
+        $users = $this->paginate($this->Users);
+        $this->set(compact('users'));
+    }
+
+    public function product()
     {
         $this->render('/Pages/hpageprod');
     }
