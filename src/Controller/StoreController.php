@@ -109,6 +109,55 @@ class StoreController extends AppController
         echo json_encode($results);
     }
 
+    public function updateuser()
+    {
+        $this->autoRender = false;
+        $connection = ConnectionManager::get('default');
+
+        $varid = (int) $this->request->data('id');
+
+        $varusern = $this->request->data('username');
+        $varpass = $this->request->data('password');
+        $varln = $this->request->data('lastname');
+        $varfn = $this->request->data('firstname');
+        $varmn = $this->request->data('middlename');
+        $varrole = $this->request->data('role');
+        $varpos = $this->request->data('position');
+        $varbranch = $this->request->data('branch');
+
+        //$vardate = UTC_TIMESTAMP();
+        //date("Y-m-d h:i:sa");
+
+        if ($connection->execute("UPDATE users SET username = '$varusern', password = '$varpass', lastname = '$varln', firstname = '$varfn', middlename = '$varmn', role = '$varrole', position = '$varpos', branch = '$varbranch', modified = UTC_TIMESTAMP()  WHERE  id = '$varid'")) {
+            $this->redirect(['action' => 'renderusers']);
+            $this->Flash->success(__('User succesfully updated.'));
+        }
+    }
+
+    public function updateprod()
+    {
+        $this->autoRender = false;
+        $connection = ConnectionManager::get('default');
+
+        $varid = (int) $this->request->data('productid');
+
+        $varname = $this->request->data('name');
+        $varunitprice = $this->request->data('unitprice');
+
+        if ($connection->execute("UPDATE product SET name = '$varname', unitprice = '$varunitprice' WHERE  productid = '$varid'")) {
+            $this->redirect(['action' => 'renderprod']);
+            $this->Flash->success(__('User succesfully updated.'));
+        }
+    }
+
+    public function sourceloader()
+    {
+        $this->autoRender = false;
+        $connection = ConnectionManager::get('default');
+        $results = $connection->execute("SELECT * FROM sourceofinventory")->fetchAll('assoc');
+        echo json_encode($results);
+    }
+
      /**
      * Index method
      *
@@ -117,7 +166,7 @@ class StoreController extends AppController
 
     public function index()
     {
-        $store = $this->paginate($this->Store);
+        $store = $this->paginate($this->Product);
 
         $this->set(compact('store'));
     }
