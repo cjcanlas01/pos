@@ -158,6 +158,14 @@ class StoreController extends AppController
         echo json_encode($results);
     }
 
+    public function prodloader()
+    {
+        $this->autoRender = false;
+        $connection = ConnectionManager::get('default');
+        $results = $connection->execute("SELECT * FROM product")->fetchAll('assoc');
+        echo json_encode($results);
+    }
+
      /**
      * Index method
      *
