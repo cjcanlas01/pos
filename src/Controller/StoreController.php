@@ -166,6 +166,51 @@ class StoreController extends AppController
         echo json_encode($results);
     }
 
+    public function userloaderdetails()
+    {
+        $this->autoRender = false;
+        $results = $this->Auth->user('id');
+        echo json_encode($results);
+    }
+
+    public function addinventory()
+    {
+        $this->autoRender = false;
+        $connection = ConnectionManager::get('default');
+
+        $finalinventory = "";
+        $finalweight = "";
+
+        $productid = $this->request->data('productid');
+        $sourceid = $this->request->data('sourceid');
+        $userid = $this->request->data('userid');
+
+        $totalinventory = $this->request->data('totalinventory'); //new record for inventory
+        $productinventory = $this->request->data('productinventory'); //current inventory in record
+        $productweight = $this->request->data('productweight'); //current weight in inventory
+
+        $weight = $this->request->data('weight');
+        $unitprice = $this->request->data('unitprice');
+
+        if (empty($totalinventory)) {
+            $finalinventory = $totalinventory;
+            $finalweight = $weight;
+        } else {
+            $finalinventory = $productinventory + $totalinventory;
+            $finalweight = $productweight + $weight;
+        }
+        //(int)
+        //$vardate = UTC_TIMESTAMP();
+        //date("Y-m-d h:i:sa");
+
+        $connection->execute("INSERT INTO inventory SET productid = '$productid', sourceid = '$sourceid', weight = '$weight', totalinventory = '$totalinventory', ");
+        if ($connection->execute("UPDATE users SET username = '$varusern', password = '$varpass', lastname = '$varln', firstname = '$varfn', middlename = '$varmn', role = '$varrole', position = '$varpos', branch = '$varbranch', modified = UTC_TIMESTAMP()  WHERE  id = '$varid'")) {
+            $this->redirect(['action' => 'renderusers']);
+            $this->Flash->success(__('User succesfully updated.'));
+        }
+    }
+
+
      /**
      * Index method
      *
