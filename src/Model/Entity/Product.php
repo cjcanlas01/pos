@@ -9,9 +9,7 @@ use Cake\ORM\Entity;
  * @property int $productid
  * @property string $name
  * @property string $unitprice
- * @property string $weight
- * @property string $inventory
- * @property \Cake\I18n\FrozenTime $date
+ * @property string $created
  * @property string $userid
  * @property string|resource $image
  */
@@ -30,9 +28,7 @@ class Product extends Entity
     protected $_accessible = [
         'name' => true,
         'unitprice' => true,
-        'weight' => true,
-        'inventory' => true,
-        'date' => true,
+        'created' => true,
         'userid' => true,
         'image' => true
     ];

@@ -17,6 +17,8 @@ use Cake\Validation\Validator;
  * @method \App\Model\Entity\Product patchEntity(\Cake\Datasource\EntityInterface $entity, array $data, array $options = [])
  * @method \App\Model\Entity\Product[] patchEntities($entities, array $data, array $options = [])
  * @method \App\Model\Entity\Product findOrCreate($search, callable $callback = null, $options = [])
+ *
+ * @mixin \Cake\ORM\Behavior\TimestampBehavior
  */
 class ProductTable extends Table
 {
@@ -62,24 +64,6 @@ class ProductTable extends Table
             ->requirePresence('unitprice', 'create')
             ->notEmpty('unitprice');
 
-            /*
-            $validator
-            ->scalar('weight')
-            ->maxLength('weight', 255)
-            ->requirePresence('weight', 'create')
-            ->notEmpty('weight');
-
-        $validator
-            ->scalar('inventory')
-            ->maxLength('inventory', 255)
-            ->requirePresence('inventory', 'create')
-            ->notEmpty('inventory');
-
-        $validator
-            ->dateTime('date')
-            ->requirePresence('date', 'create')
-            ->notEmpty('date');
-
         $validator
             ->scalar('userid')
             ->maxLength('userid', 255)
@@ -89,7 +73,6 @@ class ProductTable extends Table
         $validator
             ->requirePresence('image', 'create')
             ->notEmpty('image');
-             */
 
         return $validator;
     }

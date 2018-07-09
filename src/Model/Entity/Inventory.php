@@ -12,7 +12,7 @@ use Cake\ORM\Entity;
  * @property string $weight
  * @property string $unitprice
  * @property string $totalinventory
- * @property \Cake\I18n\FrozenTime $datetime
+ * @property string $dateissued
  * @property string $userid
  */
 class Inventory extends Entity
@@ -33,7 +33,7 @@ class Inventory extends Entity
         'weight' => true,
         'unitprice' => true,
         'totalinventory' => true,
-        'datetime' => true,
+        'dateissued' => true,
         'userid' => true
     ];
 }

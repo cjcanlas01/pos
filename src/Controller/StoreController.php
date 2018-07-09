@@ -31,6 +31,16 @@ class StoreController extends AppController
         $this->render('/Users/addusers');
     }
 
+    public function renderhpageprod()
+    {
+        $this->render('/Pages/hpageprod');
+    }
+
+    public function renderreports()
+    {
+        $this->render('/Pages/reports');
+    }
+
     public function adduser()
     {
         $this->loadModel('Users');
@@ -49,22 +59,23 @@ class StoreController extends AppController
         $this->render('renderusers');
     }
 
-    public function addproduct()
+    public function addproductinv()
     {
-        $this->loadModel('Product');
-        $prod = $this->Product->newEntity();
-        if ($this->request->is('post')) {
-            // Prior to 3.4.0 $this->request->data() was used.
-            $prod = $this->Product->patchEntity($prod, $this->request->getData());
-            if ($this->Product->save($prod)) {
-                $this->Flash->success(__('The product has been added.'));
-                return $this->redirect(['action' => 'renderprod']);
-            }
+        $this->autoRender = false;
+        $connection = ConnectionManager::get('default');
+
+        $name = $this->request->data('name');
+        $unitprice = $this->request->data('unitprice');
+        $id = $this->Auth->user('id');
+        $date = date('Y-m-d H:i:s');
+
+        if ($connection->execute("INSERT INTO product (name, unitprice, created, userid) VALUES ('$name', '$unitprice', '$date', '$id')")) {
+            $this->redirect(['action' => 'renderprod']);
+            $this->Flash->success(__('Product succesfully added.'));
+        } else {
             $this->Flash->error(__('Unable to add the product.'));
             return $this->redirect(['action' => 'renderprod']);
         }
-        $this->set('Product', $prod);
-        $this->render('renderprod');
     }
 
     public function addsofi()
@@ -125,12 +136,12 @@ class StoreController extends AppController
         $varpos = $this->request->data('position');
         $varbranch = $this->request->data('branch');
 
-        //$vardate = UTC_TIMESTAMP();
-        //date("Y-m-d h:i:sa");
-
         if ($connection->execute("UPDATE users SET username = '$varusern', password = '$varpass', lastname = '$varln', firstname = '$varfn', middlename = '$varmn', role = '$varrole', position = '$varpos', branch = '$varbranch', modified = UTC_TIMESTAMP()  WHERE  id = '$varid'")) {
             $this->redirect(['action' => 'renderusers']);
             $this->Flash->success(__('User succesfully updated.'));
+        } else {
+            $this->Flash->error(__('Unable to add the user.'));
+            return $this->redirect(['action' => 'renderusers']);
         }
     }
 
@@ -146,7 +157,10 @@ class StoreController extends AppController
 
         if ($connection->execute("UPDATE product SET name = '$varname', unitprice = '$varunitprice' WHERE  productid = '$varid'")) {
             $this->redirect(['action' => 'renderprod']);
-            $this->Flash->success(__('User succesfully updated.'));
+            $this->Flash->success(__('Product succesfully updated.'));
+        } else {
+            $this->Flash->error(__('Unable to update the product.'));
+            return $this->redirect(['action' => 'renderprod']);
         }
     }
 
@@ -178,35 +192,73 @@ class StoreController extends AppController
         $this->autoRender = false;
         $connection = ConnectionManager::get('default');
 
-        $finalinventory = "";
-        $finalweight = "";
-
         $productid = $this->request->data('productid');
         $sourceid = $this->request->data('sourceid');
         $userid = $this->request->data('userid');
 
         $totalinventory = $this->request->data('totalinventory'); //new record for inventory
-        $productinventory = $this->request->data('productinventory'); //current inventory in record
-        $productweight = $this->request->data('productweight'); //current weight in inventory
 
         $weight = $this->request->data('weight');
         $unitprice = $this->request->data('unitprice');
+        $date = date('Y-m-d H:i:s');
+        $id = $this->Auth->user('id');
 
-        if (empty($totalinventory)) {
-            $finalinventory = $totalinventory;
-            $finalweight = $weight;
+        if ($connection->execute("INSERT INTO inventory SET productid = '$productid', sourceid = '$sourceid', weight = '$weight', unitprice = '$unitprice', totalinventory = '$totalinventory', dateissued = '$date', userid = '$id'")) {
+            $this->redirect(['action' => 'renderhpageprod']);
+            $this->Flash->success(__('Inventory succesfully added.'));
         } else {
-            $finalinventory = $productinventory + $totalinventory;
-            $finalweight = $productweight + $weight;
+            $this->Flash->error(__('Unable to add the inventory.'));
+            return $this->redirect(['action' => 'renderhpageprod']);
         }
-        //(int)
-        //$vardate = UTC_TIMESTAMP();
-        //date("Y-m-d h:i:sa");
+    }
 
-        $connection->execute("INSERT INTO inventory SET productid = '$productid', sourceid = '$sourceid', weight = '$weight', totalinventory = '$totalinventory', ");
-        if ($connection->execute("UPDATE users SET username = '$varusern', password = '$varpass', lastname = '$varln', firstname = '$varfn', middlename = '$varmn', role = '$varrole', position = '$varpos', branch = '$varbranch', modified = UTC_TIMESTAMP()  WHERE  id = '$varid'")) {
-            $this->redirect(['action' => 'renderusers']);
-            $this->Flash->success(__('User succesfully updated.'));
+    public function addsales()
+    {
+        $this->autoRender = false;
+        $connection = ConnectionManager::get('default');
+
+        $productid = $this->request->data('productid');
+        $price = $this->request->data('price');
+        $weight = $this->request->data('weight');
+
+        $amountdue = $this->request->data('amountdue'); //new record for inventory
+
+        $lessdiscount = $this->request->data('lessdiscount');
+        $netamountdue = $this->request->data('netamountdue');
+        $amounttender = $this->request->data('amounttender');
+        $change = $this->request->data('change');
+
+        $date = date('Y-m-d H:i:s');
+        $id = $this->Auth->user('id');
+
+        if ($connection->execute("INSERT INTO sales SET productid = '$productid', price = '$price', weight = '$weight', amountdue = '$amountdue', lessdiscount = '$lessdiscount', netamountdue = '$netamountdue', amounttender = '$amounttender', amountchange = '$change', dateissued = '$date', userid = '$id'")) {
+            $this->redirect(['action' => 'renderhpageprod']);
+            $this->Flash->success(__('Sale succesfully added.'));
+        } else {
+            $this->Flash->error(__('Unable to add the sale.'));
+            return $this->redirect(['action' => 'renderhpageprod']);
+        }
+    }
+
+    public function genreport()
+    {
+        $this->autoRender = false;
+        $connection = ConnectionManager::get('default');
+        $sales = $connection->execute("SELECT * FROM sales");
+        foreach ($sales as $fields) {
+            echo "<tr>";
+            echo "<td>".$fields['salesid']."<td/>";
+            echo "<td>".$fields['productid']."<td>";
+            echo "<td>".$fields['price']."<td>";
+            echo "<td>".$fields['weight']."<td>";
+            echo "<td>".$fields['amountdue']."<td>";
+            echo "<td>".$fields['lessdiscount']."<td>";
+            echo "<td>".$fields['netamountdue']."<td>";
+            echo "<td>".$fields['amounttender']."<td>";
+            echo "<td>".$fields['amountchange']."<td>";
+            echo "<td>".$fields['dateissued']."<td>";
+            echo "<td>".$fields['userid']."<td>";
+            echo "<tr/>";
         }
     }
 
