@@ -240,26 +240,46 @@ class StoreController extends AppController
         }
     }
 
-    public function genreport()
+    public function genreportsales()
     {
+        $test = $this->request->data('product_');
+        $output_layout = '';
+        //echo $test;
+        //echo "<br />";
+        //$this->render('/Store/genreport');
         $this->autoRender = false;
         $connection = ConnectionManager::get('default');
-        $sales = $connection->execute("SELECT * FROM sales");
+        $sales = $connection->execute("SELECT sales.salesid, product.name, sales.price, sales.weight, sales.amountdue, sales.lessdiscount, sales.netamountdue, sales.amounttender, sales.amountchange, sales.dateissued, users.username FROM sales INNER JOIN product ON sales.productid=product.productid INNER JOIN users ON sales.id=users.id WHERE sales.productid='$test'");
+        $output_layout .= "<table border='2' style='width: 100%; text-align: center;'>";
+        echo "<thead style='font-weight: 1000;'>";
+            echo "<td>Sales ID</td>";
+            echo "<td>Product Name</td>";
+            echo "<td>Price</td>";
+            echo "<td>Weight</td>";
+            echo "<td>Amount Due</td>";
+            echo "<td>Less Discount</td>";
+            echo "<td>Net Amount Due</td>";
+            echo "<td>Amount Tender</td>";
+            echo "<td>Amount Change</td>";
+            echo "<td>Date Issued</td>";
+            echo "<td>User</td>";
+        echo "</thead>";
         foreach ($sales as $fields) {
             echo "<tr>";
-            echo "<td>".$fields['salesid']."<td/>";
-            echo "<td>".$fields['productid']."<td>";
-            echo "<td>".$fields['price']."<td>";
-            echo "<td>".$fields['weight']."<td>";
-            echo "<td>".$fields['amountdue']."<td>";
-            echo "<td>".$fields['lessdiscount']."<td>";
-            echo "<td>".$fields['netamountdue']."<td>";
-            echo "<td>".$fields['amounttender']."<td>";
-            echo "<td>".$fields['amountchange']."<td>";
-            echo "<td>".$fields['dateissued']."<td>";
-            echo "<td>".$fields['userid']."<td>";
+            echo "<td>".$fields['salesid']."</td>";
+            echo "<td>".$fields['name']."</td>";
+            echo "<td>".$fields['price']."</td>";
+            echo "<td>".$fields['weight']."</td>";
+            echo "<td>".$fields['amountdue']."</td>";
+            echo "<td>".$fields['lessdiscount']."</td>";
+            echo "<td>".$fields['netamountdue']."</td>";
+            echo "<td>".$fields['amounttender']."</td>";
+            echo "<td>".$fields['amountchange']."</td>";
+            echo "<td>".$fields['dateissued']."</td>";
+            echo "<td>".$fields['username']."</td>";
             echo "<tr/>";
         }
+        echo "<table/>";
     }
 
 
