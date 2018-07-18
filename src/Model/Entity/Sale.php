@@ -4,19 +4,22 @@ namespace App\Model\Entity;
 use Cake\ORM\Entity;
 
 /**
- * Inventory Entity
+ * Sale Entity
  *
- * @property int $inventoryid
+ * @property int $salesid
  * @property string $productid
- * @property string $sourceid
+ * @property string $price
  * @property string $weight
- * @property string $unitprice
- * @property string $totalinventory
+ * @property string $amountdue
+ * @property string $lessdiscount
+ * @property string $netamountdue
+ * @property string $amounttender
+ * @property string $amountchange
  * @property string $dateissued
  * @property string $timeissued
  * @property string $id
  */
-class Inventory extends Entity
+class Sale extends Entity
 {
 
     /**
@@ -30,10 +33,13 @@ class Inventory extends Entity
      */
     protected $_accessible = [
         'productid' => true,
-        'sourceid' => true,
+        'price' => true,
         'weight' => true,
-        'unitprice' => true,
-        'totalinventory' => true,
+        'amountdue' => true,
+        'lessdiscount' => true,
+        'netamountdue' => true,
+        'amounttender' => true,
+        'amountchange' => true,
         'dateissued' => true,
         'timeissued' => true,
         'id' => true

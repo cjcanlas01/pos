@@ -16,29 +16,34 @@ use Cake\ORM\TableRegistry;
 class StoreController extends AppController
 {
 
-    public function renderprod()
+    public function posmenupage()
     {
-        $this->render('/Pages/product');
+        $this->render('pos');
     }
 
-    public function rendersofi()
+    public function productpage()
     {
-         $this->render('/Pages/sourceofinventory');
+        $this->render('product');
     }
 
-    public function renderusers()
+    public function sofipage()
     {
-        $this->render('/Users/addusers');
+         $this->render('sourceofinventory');
     }
 
-    public function renderhpageprod()
+    public function userspage()
     {
-        $this->render('/Pages/hpageprod');
+        $this->render('addusers');
     }
 
-    public function renderreports()
+    public function salesreportspage()
     {
-        $this->render('/Pages/reports');
+        $this->render('salesreport');
+    }
+
+        public function inventoryreportspage()
+    {
+        $this->render('inventoryreport');
     }
 
     public function adduser()
@@ -50,16 +55,16 @@ class StoreController extends AppController
             $user = $this->Users->patchEntity($user, $this->request->getData());
             if ($this->Users->save($user)) {
                 $this->Flash->success(__('The user has been added.'));
-                return $this->redirect(['action' => 'renderusers']);
+                return $this->redirect(['action' => 'userspage']);
             }
             $this->Flash->error(__('Unable to add the user.'));
-            return $this->redirect(['action' => 'renderusers']);
+            return $this->redirect(['action' => 'userspage']);
         }
         $this->set('Users', $user);
         $this->render('renderusers');
     }
 
-    public function addproductinv()
+    public function addproduct()
     {
         $this->autoRender = false;
         $connection = ConnectionManager::get('default');
@@ -70,11 +75,11 @@ class StoreController extends AppController
         $date = date('Y-m-d H:i:s');
 
         if ($connection->execute("INSERT INTO product (name, unitprice, created, userid) VALUES ('$name', '$unitprice', '$date', '$id')")) {
-            $this->redirect(['action' => 'renderprod']);
+            $this->redirect(['action' => 'productpage']);
             $this->Flash->success(__('Product succesfully added.'));
         } else {
             $this->Flash->error(__('Unable to add the product.'));
-            return $this->redirect(['action' => 'renderprod']);
+            return $this->redirect(['action' => 'productpage']);
         }
     }
 
@@ -87,10 +92,10 @@ class StoreController extends AppController
             $sofi = $this->Sourceofinventory->patchEntity($sofi, $this->request->getData());
             if ($this->Sourceofinventory->save($sofi)) {
                 $this->Flash->success(__('The source has been added.'));
-                return $this->redirect(['action' => 'rendersofi']);
+                return $this->redirect(['action' => 'sofipage']);
             }
             $this->Flash->error(__('Unable to add the source.'));
-            return $this->redirect(['action' => 'rendersofi']);
+            return $this->redirect(['action' => 'sofipage']);
         }
         $this->set('Sourceofinventory', $sofi);
         $this->render('rendersofi');
@@ -104,7 +109,7 @@ class StoreController extends AppController
         echo json_encode($results);
     }
 
-    public function viewprod()
+    public function viewproduct()
     {
         $this->autoRender = false;
         $connection = ConnectionManager::get('default');
@@ -137,15 +142,15 @@ class StoreController extends AppController
         $varbranch = $this->request->data('branch');
 
         if ($connection->execute("UPDATE users SET username = '$varusern', password = '$varpass', lastname = '$varln', firstname = '$varfn', middlename = '$varmn', role = '$varrole', position = '$varpos', branch = '$varbranch', modified = UTC_TIMESTAMP()  WHERE  id = '$varid'")) {
-            $this->redirect(['action' => 'renderusers']);
+            $this->redirect(['action' => 'userspage']);
             $this->Flash->success(__('User succesfully updated.'));
         } else {
             $this->Flash->error(__('Unable to add the user.'));
-            return $this->redirect(['action' => 'renderusers']);
+            return $this->redirect(['action' => 'userspage']);
         }
     }
 
-    public function updateprod()
+    public function updateproduct()
     {
         $this->autoRender = false;
         $connection = ConnectionManager::get('default');
@@ -156,31 +161,32 @@ class StoreController extends AppController
         $varunitprice = $this->request->data('unitprice');
 
         if ($connection->execute("UPDATE product SET name = '$varname', unitprice = '$varunitprice' WHERE  productid = '$varid'")) {
-            $this->redirect(['action' => 'renderprod']);
+            $this->redirect(['action' => 'productpage']);
             $this->Flash->success(__('Product succesfully updated.'));
         } else {
             $this->Flash->error(__('Unable to update the product.'));
-            return $this->redirect(['action' => 'renderprod']);
+            return $this->redirect(['action' => 'productpage']);
         }
     }
 
-    public function sourceloader()
+    public function updatesofi()
     {
         $this->autoRender = false;
         $connection = ConnectionManager::get('default');
-        $results = $connection->execute("SELECT * FROM sourceofinventory")->fetchAll('assoc');
-        echo json_encode($results);
+
+        $varid = (int) $this->request->data('editid');
+        $varname = $this->request->data('name');
+
+        if ($connection->execute("UPDATE sourceofinventory SET name = '$varname' WHERE  sourceid = '$varid'")) {
+            $this->redirect(['action' => 'sofipage']);
+            $this->Flash->success(__('Source succesfully updated.'));
+        } else {
+            $this->Flash->error(__('Unable to update the source.'));
+            return $this->redirect(['action' => 'sofipage']);
+        }
     }
 
-    public function prodloader()
-    {
-        $this->autoRender = false;
-        $connection = ConnectionManager::get('default');
-        $results = $connection->execute("SELECT * FROM product")->fetchAll('assoc');
-        echo json_encode($results);
-    }
-
-    public function userloaderdetails()
+    public function userdetailsloader()
     {
         $this->autoRender = false;
         $results = $this->Auth->user('id');
@@ -195,20 +201,26 @@ class StoreController extends AppController
         $productid = $this->request->data('productid');
         $sourceid = $this->request->data('sourceid');
         $userid = $this->request->data('userid');
-
-        $totalinventory = $this->request->data('totalinventory'); //new record for inventory
+        $id = $this->Auth->user('id');
 
         $weight = $this->request->data('weight');
         $unitprice = $this->request->data('unitprice');
-        $date = date('Y-m-d H:i:s');
-        $id = $this->Auth->user('id');
 
-        if ($connection->execute("INSERT INTO inventory SET productid = '$productid', sourceid = '$sourceid', weight = '$weight', unitprice = '$unitprice', totalinventory = '$totalinventory', dateissued = '$date', userid = '$id'")) {
-            $this->redirect(['action' => 'renderhpageprod']);
+        $totalinventory = $this->request->data('totalinventory'); //new record for inventory
+
+        date_default_timezone_set('Asia/Manila');
+
+        //$date = date('m-d-Y');
+        //$time = date('H:i:s');
+
+        $time = date('H:i:s');
+
+        if ($connection->execute("INSERT INTO inventory SET productid = '$productid', sourceid = '$sourceid', weight = '$weight', unitprice = '$unitprice', totalinventory = '$totalinventory', dateissued = CURDATE(), timeissued = '$time', id = '$id'")) {
+            $this->redirect(['action' => 'posmenupage']);
             $this->Flash->success(__('Inventory succesfully added.'));
         } else {
             $this->Flash->error(__('Unable to add the inventory.'));
-            return $this->redirect(['action' => 'renderhpageprod']);
+            return $this->redirect(['action' => 'posmenupage']);
         }
     }
 
@@ -218,70 +230,159 @@ class StoreController extends AppController
         $connection = ConnectionManager::get('default');
 
         $productid = $this->request->data('productid');
+        $id = $this->Auth->user('id');
+
         $price = $this->request->data('price');
         $weight = $this->request->data('weight');
-
-        $amountdue = $this->request->data('amountdue'); //new record for inventory
-
+        $amountdue = $this->request->data('amountdue');
         $lessdiscount = $this->request->data('lessdiscount');
         $netamountdue = $this->request->data('netamountdue');
         $amounttender = $this->request->data('amounttender');
+
         $change = $this->request->data('change');
 
-        $date = date('Y-m-d H:i:s');
-        $id = $this->Auth->user('id');
+        date_default_timezone_set('Asia/Manila');
 
-        if ($connection->execute("INSERT INTO sales SET productid = '$productid', price = '$price', weight = '$weight', amountdue = '$amountdue', lessdiscount = '$lessdiscount', netamountdue = '$netamountdue', amounttender = '$amounttender', amountchange = '$change', dateissued = '$date', userid = '$id'")) {
-            $this->redirect(['action' => 'renderhpageprod']);
+        //$date = date('m-d-Y');
+        //$time = date('H:i:s');
+        //
+        $time = date('H:i:s');
+
+        if ($connection->execute("INSERT INTO sales SET productid = '$productid', price = '$price', weight = '$weight', amountdue = '$amountdue', lessdiscount = '$lessdiscount', netamountdue = '$netamountdue', amounttender = '$amounttender', amountchange = '$change', dateissued = CURDATE(), timeissued = '$time', id = '$id'")) {
+            $this->redirect(['action' => 'posmenupage']);
             $this->Flash->success(__('Sale succesfully added.'));
         } else {
             $this->Flash->error(__('Unable to add the sale.'));
-            return $this->redirect(['action' => 'renderhpageprod']);
+            return $this->redirect(['action' => 'posmenupage']);
         }
     }
 
     public function genreportsales()
     {
-        $test = $this->request->data('product_');
-        $output_layout = '';
-        //echo $test;
-        //echo "<br />";
-        //$this->render('/Store/genreport');
         $this->autoRender = false;
         $connection = ConnectionManager::get('default');
-        $sales = $connection->execute("SELECT sales.salesid, product.name, sales.price, sales.weight, sales.amountdue, sales.lessdiscount, sales.netamountdue, sales.amounttender, sales.amountchange, sales.dateissued, users.username FROM sales INNER JOIN product ON sales.productid=product.productid INNER JOIN users ON sales.id=users.id WHERE sales.productid='$test'");
-        $output_layout .= "<table border='2' style='width: 100%; text-align: center;'>";
-        echo "<thead style='font-weight: 1000;'>";
-            echo "<td>Sales ID</td>";
-            echo "<td>Product Name</td>";
-            echo "<td>Price</td>";
-            echo "<td>Weight</td>";
-            echo "<td>Amount Due</td>";
-            echo "<td>Less Discount</td>";
-            echo "<td>Net Amount Due</td>";
-            echo "<td>Amount Tender</td>";
-            echo "<td>Amount Change</td>";
-            echo "<td>Date Issued</td>";
-            echo "<td>User</td>";
-        echo "</thead>";
-        foreach ($sales as $fields) {
-            echo "<tr>";
-            echo "<td>".$fields['salesid']."</td>";
-            echo "<td>".$fields['name']."</td>";
-            echo "<td>".$fields['price']."</td>";
-            echo "<td>".$fields['weight']."</td>";
-            echo "<td>".$fields['amountdue']."</td>";
-            echo "<td>".$fields['lessdiscount']."</td>";
-            echo "<td>".$fields['netamountdue']."</td>";
-            echo "<td>".$fields['amounttender']."</td>";
-            echo "<td>".$fields['amountchange']."</td>";
-            echo "<td>".$fields['dateissued']."</td>";
-            echo "<td>".$fields['username']."</td>";
-            echo "<tr/>";
+
+        $startdate = $this->request->data('startdate');
+        $enddate = $this->request->data('enddate');
+        $productid = $this->request->data('productid');
+
+        $dateA = date("Y-m-d", strtotime($startdate));
+        $dateB = date("Y-m-d", strtotime($enddate));
+
+        $output_layout = '';
+
+        if (!$startdate == "" && $enddate == "" && $productid == "") {
+            $sales = $connection->execute("SELECT sales.salesid, product.name, sales.price, sales.weight, sales.amountdue, sales.lessdiscount, sales.netamountdue, sales.amounttender, sales.amountchange, sales.dateissued, sales.timeissued, users.username FROM sales INNER JOIN product ON sales.productid=product.productid INNER JOIN users ON sales.id=users.id WHERE sales.dateissued LIKE '$dateA'");
+        } elseif (!$startdate == "" && !$enddate == "" && $productid == "") {
+            $sales = $connection->execute("SELECT sales.salesid, product.name, sales.price, sales.weight, sales.amountdue, sales.lessdiscount, sales.netamountdue, sales.amounttender, sales.amountchange, sales.dateissued, sales.timeissued, users.username FROM sales INNER JOIN product ON sales.productid=product.productid INNER JOIN users ON sales.id=users.id WHERE sales.dateissued >= '$dateA' AND sales.dateissued <= '$dateB'");
+        } elseif (!$startdate == "" && !$enddate == "" && !$productid == "") {
+            if ($productid == "ALL") {
+                $sales = $connection->execute("SELECT sales.salesid, product.name, sales.price, sales.weight, sales.amountdue, sales.lessdiscount, sales.netamountdue, sales.amounttender, sales.amountchange, sales.dateissued, sales.timeissued, users.username FROM sales INNER JOIN product ON sales.productid=product.productid INNER JOIN users ON sales.id=users.id WHERE sales.dateissued >= '$dateA' AND sales.dateissued <= '$dateB'");
+            } else {
+                $sales = $connection->execute("SELECT sales.salesid, product.name, sales.price, sales.weight, sales.amountdue, sales.lessdiscount, sales.netamountdue, sales.amounttender, sales.amountchange, sales.dateissued, sales.timeissued, users.username FROM sales INNER JOIN product ON sales.productid=product.productid INNER JOIN users ON sales.id=users.id WHERE sales.dateissued >= '$dateA' AND sales.dateissued <= '$dateB' AND sales.productid = '$productid'");
+            }
+        } else {
+            /*
+            $sales = $connection->execute("SELECT sales.salesid, product.name, sales.price, sales.weight, sales.amountdue, sales.lessdiscount, sales.netamountdue, sales.amounttender, sales.amountchange, sales.dateissued, sales.timeissued, users.username FROM sales INNER JOIN product ON sales.productid=product.productid INNER JOIN users ON sales.id=users.id");
+             */
         }
-        echo "<table/>";
+        //debug($sales);
+
+        try {
+            $output_layout .= "<table class='table table-bordered' style='width: 100%; text-align: center;'>";
+            $output_layout .= "<thead style='font-weight: 1000;'>";
+            $output_layout .= "<td>Sales ID</td>";
+            $output_layout .= "<td>Product Name</td>";
+            $output_layout .= "<td>Price</td>";
+            $output_layout .= "<td>Weight</td>";
+            $output_layout .= "<td>Amount Due</td>";
+            $output_layout .= "<td>Less Discount</td>";
+            $output_layout .= "<td>Net Amount Due</td>";
+            $output_layout .= "<td>Amount Tender</td>";
+            $output_layout .= "<td>Amount Change</td>";
+            $output_layout .= "<td>Date Issued</td>";
+            $output_layout .= "<td>User</td>";
+            $output_layout .= "</thead>";
+            foreach ($sales as $fields) {
+                $output_layout .= "<tr>";
+                $output_layout .= "<td>".$fields['salesid']."</td>";
+                $output_layout .= "<td>".$fields['name']."</td>";
+                $output_layout .= "<td>".$fields['price']."</td>";
+                $output_layout .= "<td>".$fields['weight']."</td>";
+                $output_layout .= "<td>".$fields['amountdue']."</td>";
+                $output_layout .= "<td>".$fields['lessdiscount']."</td>";
+                $output_layout .= "<td>".$fields['netamountdue']."</td>";
+                $output_layout .= "<td>".$fields['amounttender']."</td>";
+                $output_layout .= "<td>".$fields['amountchange']."</td>";
+                $output_layout .= "<td>".$fields['dateissued']." ".$fields['timeissued'].".</td>";
+                $output_layout .= "<td>".$fields['username']."</td>";
+                $output_layout .= "<tr/>";
+            }
+            $output_layout .= "</table>";
+            echo $output_layout;
+        } catch (\Exception $e) {
+            echo $e;
+        }
     }
 
+    public function genreportinventory()
+    {
+        $this->autoRender = false;
+        $connection = ConnectionManager::get('default');
+
+        $startdate = $this->request->data('startdate');
+        $enddate = $this->request->data('enddate');
+        $productid = $this->request->data('productid');
+        $sourceid = $this->request->data('sourceid');
+
+        $dateA = date("Y-m-d", strtotime($startdate));
+        $dateB = date("Y-m-d", strtotime($enddate));
+
+        $output_layout = '';
+        echo $dateA;
+        echo $dateB;
+        // WHERE inventory.dateissued LIKE '$dateA'
+        if (!$startdate == "") {
+            $inv = $connection->execute("SELECT inventory.inventoryid, product.name, sourceofinventory.name, inventory.weight, inventory.unitprice, inventory.totalinventory, inventory.dateissued, users.username FROM inventory INNER JOIN product ON inventory.productid=product.productid INNER JOIN sourceofinventory ON inventory.sourceid=sourceofinventory.sourceid INNER JOIN users ON inventory.id=users.id WHERE inventory.dateissued LIKE '$dateA'");
+        } else {
+            /*
+            $sales = $connection->execute("SELECT sales.salesid, product.name, sales.price, sales.weight, sales.amountdue, sales.lessdiscount, sales.netamountdue, sales.amounttender, sales.amountchange, sales.dateissued, sales.timeissued, users.username FROM sales INNER JOIN product ON sales.productid=product.productid INNER JOIN users ON sales.id=users.id WHERE sales.dateissued >= '$dateA' AND sales.dateissued <= '$dateB' AND sales.productid = '$productid'");
+
+             */
+            $inv = $connection->execute("SELECT inventory.inventoryid, product.name, sourceofinventory.name, inventory.weight, inventory.unitprice, inventory.totalinventory, inventory.dateissued, users.username FROM inventory INNER JOIN product ON inventory.productid=product.productid INNER JOIN sourceofinventory ON inventory.sourceid=sourceofinventory.sourceid INNER JOIN users ON inventory.id=users.id");
+        }
+        //debug($inv);
+
+        try {
+            $output_layout .= "<table class='table table-bordered' style='width: 100%; text-align: center;'>";
+            $output_layout .= "<thead style='font-weight: 1000;'>";
+            $output_layout .= "<td>Inventory ID</td>";
+            $output_layout .= "<td>Product Name</td>";
+            $output_layout .= "<td>Source</td>";
+            $output_layout .= "<td>Weight</td>";
+            $output_layout .= "<td>Unit Price Due</td>";
+            $output_layout .= "<td>Total Inventory</td>";
+            $output_layout .= "<td>Date</td>";
+            $output_layout .= "<td>User</td>";
+            $output_layout .= "</thead>";
+            foreach ($inv as $fields) {
+                $output_layout .= "<tr>";
+                $output_layout .= "<td>".$fields['inventoryid']."</td>";
+                $output_layout .= "<td>".$fields['name']."</td>";
+                $output_layout .= "<td>".$fields['name']."</td>";
+                $output_layout .= "<td>".$fields['weight']."</td>";
+                $output_layout .= "<td>".$fields['unitprice']."</td>";
+                $output_layout .= "<td>".$fields['totalinventory']."</td>";
+                $output_layout .= "<td>".$fields['dateissued']."</td>";
+                $output_layout .= "<td>".$fields['username']."</td>";
+                $output_layout .= "<tr/>";
+            }
+            $output_layout .= "</table>";
+            echo $output_layout;
+        } catch (\Exception $e) {
+            echo $e;
+        }
+    }
 
      /**
      * Index method

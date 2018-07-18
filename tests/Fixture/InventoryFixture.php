@@ -31,7 +31,8 @@ class InventoryFixture extends TestFixture
         'unitprice' => ['type' => 'string', 'length' => 255, 'null' => false, 'default' => '0', 'collate' => 'latin1_swedish_ci', 'comment' => '', 'precision' => null, 'fixed' => null],
         'totalinventory' => ['type' => 'string', 'length' => 255, 'null' => false, 'default' => '0', 'collate' => 'latin1_swedish_ci', 'comment' => '', 'precision' => null, 'fixed' => null],
         'dateissued' => ['type' => 'string', 'length' => 255, 'null' => false, 'default' => null, 'collate' => 'latin1_swedish_ci', 'comment' => '', 'precision' => null, 'fixed' => null],
-        'userid' => ['type' => 'string', 'length' => 255, 'null' => false, 'default' => null, 'collate' => 'latin1_swedish_ci', 'comment' => '', 'precision' => null, 'fixed' => null],
+        'timeissued' => ['type' => 'string', 'length' => 255, 'null' => false, 'default' => null, 'collate' => 'latin1_swedish_ci', 'comment' => '', 'precision' => null, 'fixed' => null],
+        'id' => ['type' => 'string', 'length' => 255, 'null' => false, 'default' => null, 'collate' => 'latin1_swedish_ci', 'comment' => '', 'precision' => null, 'fixed' => null],
         '_constraints' => [
             'primary' => ['type' => 'primary', 'columns' => ['inventoryid'], 'length' => []],
         ],
@@ -58,7 +59,8 @@ class InventoryFixture extends TestFixture
                 'unitprice' => 'Lorem ipsum dolor sit amet',
                 'totalinventory' => 'Lorem ipsum dolor sit amet',
                 'dateissued' => 'Lorem ipsum dolor sit amet',
-                'userid' => 'Lorem ipsum dolor sit amet'
+                'timeissued' => 'Lorem ipsum dolor sit amet',
+                'id' => 'Lorem ipsum dolor sit amet'
             ],
         ];
         parent::init();

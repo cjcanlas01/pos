@@ -85,10 +85,16 @@ class InventoryTable extends Table
             ->notEmpty('dateissued');
 
         $validator
-            ->scalar('userid')
-            ->maxLength('userid', 255)
-            ->requirePresence('userid', 'create')
-            ->notEmpty('userid');
+            ->scalar('timeissued')
+            ->maxLength('timeissued', 255)
+            ->requirePresence('timeissued', 'create')
+            ->notEmpty('timeissued');
+
+        $validator
+            ->scalar('id')
+            ->maxLength('id', 255)
+            ->requirePresence('id', 'create')
+            ->notEmpty('id');
 
         return $validator;
     }

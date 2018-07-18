@@ -22,18 +22,13 @@ class UsersController extends AppController
     {
         //$users = $this->paginate($this->Users);
         //$this->set(compact('users'));
-        $this->render('/Pages/hpageblank');
+        $this->render('blank');
     }
 
     public function index()
     {
         $users = $this->paginate($this->Users);
         $this->set(compact('users'));
-    }
-
-    public function product()
-    {
-        $this->render('/Pages/hpageprod');
     }
 
     /**
