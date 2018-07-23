@@ -269,63 +269,25 @@ class StoreController extends AppController
         $dateA = date("Y-m-d", strtotime($startdate));
         $dateB = date("Y-m-d", strtotime($enddate));
 
-        $output_layout = '';
-
-        if (!$startdate == "" && $enddate == "" && $productid == "") {
-            $sales = $connection->execute("SELECT sales.salesid, product.name, sales.price, sales.weight, sales.amountdue, sales.lessdiscount, sales.netamountdue, sales.amounttender, sales.amountchange, sales.dateissued, sales.timeissued, users.username FROM sales INNER JOIN product ON sales.productid=product.productid INNER JOIN users ON sales.id=users.id WHERE sales.dateissued LIKE '$dateA'");
-        } elseif (!$startdate == "" && !$enddate == "" && $productid == "") {
-            $sales = $connection->execute("SELECT sales.salesid, product.name, sales.price, sales.weight, sales.amountdue, sales.lessdiscount, sales.netamountdue, sales.amounttender, sales.amountchange, sales.dateissued, sales.timeissued, users.username FROM sales INNER JOIN product ON sales.productid=product.productid INNER JOIN users ON sales.id=users.id WHERE sales.dateissued >= '$dateA' AND sales.dateissued <= '$dateB'");
-        } elseif (!$startdate == "" && !$enddate == "" && !$productid == "") {
+        if ($startdate == $enddate) {
             if ($productid == "ALL") {
-                $sales = $connection->execute("SELECT sales.salesid, product.name, sales.price, sales.weight, sales.amountdue, sales.lessdiscount, sales.netamountdue, sales.amounttender, sales.amountchange, sales.dateissued, sales.timeissued, users.username FROM sales INNER JOIN product ON sales.productid=product.productid INNER JOIN users ON sales.id=users.id WHERE sales.dateissued >= '$dateA' AND sales.dateissued <= '$dateB'");
-            } else {
-                $sales = $connection->execute("SELECT sales.salesid, product.name, sales.price, sales.weight, sales.amountdue, sales.lessdiscount, sales.netamountdue, sales.amounttender, sales.amountchange, sales.dateissued, sales.timeissued, users.username FROM sales INNER JOIN product ON sales.productid=product.productid INNER JOIN users ON sales.id=users.id WHERE sales.dateissued >= '$dateA' AND sales.dateissued <= '$dateB' AND sales.productid = '$productid'");
+                $sales = $connection->execute("SELECT sales.salesid, product.productname, sales.price, sales.weight, sales.amountdue, sales.lessdiscount, sales.netamountdue, sales.amounttender, sales.amountchange, sales.dateissued, users.username FROM sales INNER JOIN product ON sales.productid=product.productid INNER JOIN users ON sales.id=users.id WHERE sales.dateissued = '$dateA'")->fetchAll('assoc');
+            } elseif ($productid != "ALL") {
+                 $sales = $connection->execute("SELECT sales.salesid, product.productname, sales.price, sales.weight, sales.amountdue, sales.lessdiscount, sales.netamountdue, sales.amounttender, sales.amountchange, sales.dateissued, users.username FROM sales INNER JOIN product ON sales.productid=product.productid INNER JOIN users ON sales.id=users.id WHERE sales.dateissued = '$dateA' AND sales.productid = '$productid'")->fetchAll('assoc');
             }
         } else {
-            /*
-            $sales = $connection->execute("SELECT sales.salesid, product.name, sales.price, sales.weight, sales.amountdue, sales.lessdiscount, sales.netamountdue, sales.amounttender, sales.amountchange, sales.dateissued, sales.timeissued, users.username FROM sales INNER JOIN product ON sales.productid=product.productid INNER JOIN users ON sales.id=users.id");
-             */
-        }
-        //debug($sales);
-
-        try {
-            $output_layout .= "<table class='table table-bordered' style='width: 100%; text-align: center;'>";
-            $output_layout .= "<thead style='font-weight: 1000;'>";
-            $output_layout .= "<td>Sales ID</td>";
-            $output_layout .= "<td>Product Name</td>";
-            $output_layout .= "<td>Price</td>";
-            $output_layout .= "<td>Weight</td>";
-            $output_layout .= "<td>Amount Due</td>";
-            $output_layout .= "<td>Less Discount</td>";
-            $output_layout .= "<td>Net Amount Due</td>";
-            $output_layout .= "<td>Amount Tender</td>";
-            $output_layout .= "<td>Amount Change</td>";
-            $output_layout .= "<td>Date Issued</td>";
-            $output_layout .= "<td>User</td>";
-            $output_layout .= "</thead>";
-            foreach ($sales as $fields) {
-                $output_layout .= "<tr>";
-                $output_layout .= "<td>".$fields['salesid']."</td>";
-                $output_layout .= "<td>".$fields['name']."</td>";
-                $output_layout .= "<td>".$fields['price']."</td>";
-                $output_layout .= "<td>".$fields['weight']."</td>";
-                $output_layout .= "<td>".$fields['amountdue']."</td>";
-                $output_layout .= "<td>".$fields['lessdiscount']."</td>";
-                $output_layout .= "<td>".$fields['netamountdue']."</td>";
-                $output_layout .= "<td>".$fields['amounttender']."</td>";
-                $output_layout .= "<td>".$fields['amountchange']."</td>";
-                $output_layout .= "<td>".$fields['dateissued']." ".$fields['timeissued'].".</td>";
-                $output_layout .= "<td>".$fields['username']."</td>";
-                $output_layout .= "<tr/>";
+            if ($productid == "ALL") {
+                $sales = $connection->execute("SELECT sales.salesid, product.productname, sales.price, sales.weight, sales.amountdue, sales.lessdiscount, sales.netamountdue, sales.amounttender, sales.amountchange, sales.dateissued, users.username FROM sales INNER JOIN product ON sales.productid=product.productid INNER JOIN users ON sales.id=users.id WHERE sales.dateissued BETWEEN '$dateA' AND '$dateB'")->fetchAll('assoc');
+            } elseif ($productid != "ALL") {
+                 $sales = $connection->execute("SELECT sales.salesid, product.productname, sales.price, sales.weight, sales.amountdue, sales.lessdiscount, sales.netamountdue, sales.amounttender, sales.amountchange, sales.dateissued, users.username FROM sales INNER JOIN product ON sales.productid=product.productid INNER JOIN users ON sales.id=users.id WHERE sales.dateissued BETWEEN '$dateA' AND '$dateB' AND sales.productid = '$productid'")->fetchAll('assoc');
             }
-            $output_layout .= "</table>";
-            echo $output_layout;
-        } catch (\Exception $e) {
-            echo $e;
         }
+        echo json_encode($sales);
     }
 
-    public function genreportinventory()
+
+
+    public function testgenreport()
     {
         $this->autoRender = false;
         $connection = ConnectionManager::get('default');
@@ -338,52 +300,25 @@ class StoreController extends AppController
         $dateA = date("Y-m-d", strtotime($startdate));
         $dateB = date("Y-m-d", strtotime($enddate));
 
-        $output_layout = '';
-        echo $dateA;
-        echo $dateB;
-        // WHERE inventory.dateissued LIKE '$dateA'
-        if (!$startdate == "") {
-            $inv = $connection->execute("SELECT inventory.inventoryid, product.name, sourceofinventory.name, inventory.weight, inventory.unitprice, inventory.totalinventory, inventory.dateissued, users.username FROM inventory INNER JOIN product ON inventory.productid=product.productid INNER JOIN sourceofinventory ON inventory.sourceid=sourceofinventory.sourceid INNER JOIN users ON inventory.id=users.id WHERE inventory.dateissued LIKE '$dateA'");
-        } else {
-            /*
-            $sales = $connection->execute("SELECT sales.salesid, product.name, sales.price, sales.weight, sales.amountdue, sales.lessdiscount, sales.netamountdue, sales.amounttender, sales.amountchange, sales.dateissued, sales.timeissued, users.username FROM sales INNER JOIN product ON sales.productid=product.productid INNER JOIN users ON sales.id=users.id WHERE sales.dateissued >= '$dateA' AND sales.dateissued <= '$dateB' AND sales.productid = '$productid'");
-
-             */
-            $inv = $connection->execute("SELECT inventory.inventoryid, product.name, sourceofinventory.name, inventory.weight, inventory.unitprice, inventory.totalinventory, inventory.dateissued, users.username FROM inventory INNER JOIN product ON inventory.productid=product.productid INNER JOIN sourceofinventory ON inventory.sourceid=sourceofinventory.sourceid INNER JOIN users ON inventory.id=users.id");
-        }
-        //debug($inv);
-
-        try {
-            $output_layout .= "<table class='table table-bordered' style='width: 100%; text-align: center;'>";
-            $output_layout .= "<thead style='font-weight: 1000;'>";
-            $output_layout .= "<td>Inventory ID</td>";
-            $output_layout .= "<td>Product Name</td>";
-            $output_layout .= "<td>Source</td>";
-            $output_layout .= "<td>Weight</td>";
-            $output_layout .= "<td>Unit Price Due</td>";
-            $output_layout .= "<td>Total Inventory</td>";
-            $output_layout .= "<td>Date</td>";
-            $output_layout .= "<td>User</td>";
-            $output_layout .= "</thead>";
-            foreach ($inv as $fields) {
-                $output_layout .= "<tr>";
-                $output_layout .= "<td>".$fields['inventoryid']."</td>";
-                $output_layout .= "<td>".$fields['name']."</td>";
-                $output_layout .= "<td>".$fields['name']."</td>";
-                $output_layout .= "<td>".$fields['weight']."</td>";
-                $output_layout .= "<td>".$fields['unitprice']."</td>";
-                $output_layout .= "<td>".$fields['totalinventory']."</td>";
-                $output_layout .= "<td>".$fields['dateissued']."</td>";
-                $output_layout .= "<td>".$fields['username']."</td>";
-                $output_layout .= "<tr/>";
+        if ($startdate == $enddate) {
+            if ($productid == "ALL" && $sourceid == "ALL") {
+                $inv = $connection->execute("SELECT inventory.inventoryid, product.productname, sourceofinventory.name, inventory.weight, inventory.unitprice, inventory.totalinventory, inventory.dateissued, users.username FROM inventory INNER JOIN product ON inventory.productid=product.productid INNER JOIN sourceofinventory ON inventory.sourceid=sourceofinventory.sourceid INNER JOIN users ON inventory.id=users.id WHERE inventory.dateissued = '$dateA'")->fetchAll('assoc');
+            } elseif ($productid != "ALL" && $sourceid == "ALL") {
+                 $inv = $connection->execute("SELECT inventory.inventoryid, product.productname, sourceofinventory.name, inventory.weight, inventory.unitprice, inventory.totalinventory, inventory.dateissued, users.username FROM inventory INNER JOIN product ON inventory.productid=product.productid INNER JOIN sourceofinventory ON inventory.sourceid=sourceofinventory.sourceid INNER JOIN users ON inventory.id=users.id WHERE inventory.dateissued = '$dateA' AND inventory.productid = '$productid'")->fetchAll('assoc');
+            } elseif ($productid != "ALL" && $sourceid != "ALL") {
+                $inv = $connection->execute("SELECT inventory.inventoryid, product.productname, sourceofinventory.name, inventory.weight, inventory.unitprice, inventory.totalinventory, inventory.dateissued, users.username FROM inventory INNER JOIN product ON inventory.productid=product.productid INNER JOIN sourceofinventory ON inventory.sourceid=sourceofinventory.sourceid INNER JOIN users ON inventory.id=users.id WHERE inventory.dateissued = '$dateA' AND inventory.productid = '$productid' AND inventory.sourceid = '$sourceid'")->fetchAll('assoc');
             }
-            $output_layout .= "</table>";
-            echo $output_layout;
-        } catch (\Exception $e) {
-            echo $e;
+        } else {
+            if ($productid == "ALL" && $sourceid == "ALL") {
+                $inv = $connection->execute("SELECT inventory.inventoryid, product.productname, sourceofinventory.name, inventory.weight, inventory.unitprice, inventory.totalinventory, inventory.dateissued, users.username FROM inventory INNER JOIN product ON inventory.productid=product.productid INNER JOIN sourceofinventory ON inventory.sourceid=sourceofinventory.sourceid INNER JOIN users ON inventory.id=users.id WHERE inventory.dateissued BETWEEN '$dateA' AND '$dateB'")->fetchAll('assoc');
+            } elseif ($productid != "ALL" && $sourceid == "ALL") {
+                 $inv = $connection->execute("SELECT inventory.inventoryid, product.productname, sourceofinventory.name, inventory.weight, inventory.unitprice, inventory.totalinventory, inventory.dateissued, users.username FROM inventory INNER JOIN product ON inventory.productid=product.productid INNER JOIN sourceofinventory ON inventory.sourceid=sourceofinventory.sourceid INNER JOIN users ON inventory.id=users.id WHERE inventory.dateissued BETWEEN '$dateA' AND '$dateB' AND inventory.productid = '$productid'")->fetchAll('assoc');
+            } elseif ($productid != "ALL" && $sourceid != "ALL") {
+                $inv = $connection->execute("SELECT inventory.inventoryid, product.productname, sourceofinventory.name, inventory.weight, inventory.unitprice, inventory.totalinventory, inventory.dateissued, users.username FROM inventory INNER JOIN product ON inventory.productid=product.productid INNER JOIN sourceofinventory ON inventory.sourceid=sourceofinventory.sourceid INNER JOIN users ON inventory.id=users.id WHERE inventory.dateissued BETWEEN '$dateA' AND '$dateB' AND inventory.productid = '$productid' AND inventory.sourceid = '$sourceid'")->fetchAll('assoc');
+            }
         }
+        echo json_encode($inv);
     }
-
      /**
      * Index method
      *
