@@ -248,9 +248,6 @@ class StoreController extends AppController
 
         date_default_timezone_set('Asia/Manila');
 
-        //$date = date('m-d-Y');
-        //$time = date('H:i:s');
-        //
         $time = date('H:i:s');
 
         if ($connection->execute("INSERT INTO sales SET productid = '$productid', price = '$price', weight = '$weight', amountdue = '$amountdue', lessdiscount = '$lessdiscount', netamountdue = '$netamountdue', amounttender = '$amounttender', amountchange = '$change', dateissued = CURDATE(), timeissued = '$time', id = '$id'")) {
@@ -323,36 +320,73 @@ class StoreController extends AppController
         echo json_encode($purchases);
     }
 
-    public function testgenreport()
+    public function getendinginventory()
+    {
+        $this->autoRender = false;
+        $connection = ConnectionManager::get('default');
+        $productid = $this->request->data('productid');
+
+        if ($productid != "ALL") {
+            $endinginv = $connection->execute("SELECT computedweight FROM endinginventory WHERE productid = '$productid'")->fetchAll('assoc');
+        } else {
+            $endinginv = $connection->execute("SELECT computedweight FROM endinginventory")->fetchAll('assoc');
+        }
+
+        echo json_encode($endinginv);
+    }
+
+    public function genreportinv()
     {
         $this->autoRender = false;
         $connection = ConnectionManager::get('default');
 
-        $startdate = $this->request->data('startdate');
-        $enddate = $this->request->data('enddate');
+        $month = $this->request->data('month');
+        $year = $this->request->data('year');
         $productid = $this->request->data('productid');
+        //$lmwinv = $this->request->data('month'); - 1;
 
-        $dateA = date("Y-m-d", strtotime($startdate));
-        $dateB = date("Y-m-d", strtotime($enddate));
+        $tbl = "";
 
-        if ($productid != "ALL") {
-            if ($startdate == '' && $enddate == '') {
-                $inv = $connection->execute("SELECT inventory.transactiontype, inventory.dateissued, inventory.timeissued, product.productname, inventory.weight FROM inventory INNER JOIN product ON inventory.productid = product.productid WHERE inventory.productid = '$productid' UNION SELECT sales.transactiontype, sales.dateissued, sales.timeissued, product.productname, sales.weight FROM sales INNER JOIN product ON sales.productid = product.productid WHERE sales.productid = '$productid' ORDER BY STR_TO_DATE(dateissued, '%Y-%m-%d'), timeissued ASC")->fetchAll('assoc');
-            } else if ($startdate != '' && $enddate != '') {
-                 $inv = $connection->execute("SELECT inventory.transactiontype, inventory.dateissued, inventory.timeissued, product.productname, inventory.weight FROM inventory INNER JOIN product ON inventory.productid = product.productid WHERE inventory.productid = '$productid' AND inventory.dateissued BETWEEN '$startdate' AND '$enddate' UNION SELECT sales.transactiontype, sales.dateissued, sales.timeissued, product.productname, sales.weight FROM sales INNER JOIN product ON sales.productid = product.productid WHERE sales.productid = '$productid' AND sales.dateissued BETWEEN '$startdate' AND '$enddate' ORDER BY STR_TO_DATE(dateissued, '%Y-%m-%d'), timeissued ASC")->fetchAll('assoc');
-            }else if ($startdate == $enddate) {
-                $inv = $connection->execute("SELECT inventory.transactiontype, inventory.dateissued, inventory.timeissued, product.productname, inventory.weight FROM inventory INNER JOIN product ON inventory.productid = product.productid WHERE inventory.productid = '$productid' AND inventory.dateissued = '$startdate' UNION SELECT sales.transactiontype, sales.dateissued, sales.timeissued, product.productname, sales.weight FROM sales INNER JOIN product ON sales.productid = product.productid WHERE sales.productid = '$productid' AND sales.dateissued = '$startdate' ORDER BY STR_TO_DATE(dateissued, '%Y-%m-%d'), timeissued ASC")->fetchAll('assoc');
-            }
+        if ($productid == "ALL") {
+            $inv = $connection->execute("SELECT inv.transactiontype, inv.dateissued, inv.timeissued, pro.productname, inv.weight FROM inventory as inv INNER JOIN product AS pro ON inv.productid = pro.productid WHERE MONTH(dateissued) = '$month' AND YEAR(dateissued) = '$year' AND YEAR(dateissued) = '$year' UNION SELECT sls.transactiontype, sls.dateissued, sls.timeissued, pro.productname, sls.weight FROM sales as sls INNER JOIN product as pro ON sls.productid = pro.productid  WHERE MONTH(dateissued) = '$month'  AND YEAR(dateissued) = '$year' AND YEAR(dateissued) = '$year' ORDER BY STR_TO_DATE(dateissued, '%Y-%m-%d'), timeissued ASC")->fetchAll('assoc');
         } else {
-            if ($startdate == '' && $enddate == '') {
-                $inv = $connection->execute("SELECT inventory.transactiontype, inventory.dateissued, inventory.timeissued, product.productname, inventory.weight FROM inventory INNER JOIN product ON inventory.productid = product.productid UNION SELECT sales.transactiontype, sales.dateissued, sales.timeissued, product.productname, sales.weight FROM sales INNER JOIN product ON sales.productid = product.productid ORDER BY STR_TO_DATE(dateissued, '%Y-%m-%d'), timeissued ASC")->fetchAll('assoc');
-            } else if ($startdate != '' && $enddate != '') {
-                 $inv = $connection->execute("SELECT inventory.transactiontype, inventory.dateissued, inventory.timeissued, product.productname, inventory.weight FROM inventory INNER JOIN product ON inventory.productid = product.productid WHERE inventory.dateissued BETWEEN '$startdate' AND '$enddate' UNION SELECT sales.transactiontype, sales.dateissued, sales.timeissued, product.productname, sales.weight FROM sales INNER JOIN product ON sales.productid = product.productid WHERE sales.dateissued BETWEEN '$startdate' AND '$enddate' ORDER BY STR_TO_DATE(dateissued, '%Y-%m-%d'), timeissued ASC")->fetchAll('assoc');
-            } else if ($startdate == $enddate) {
-                $inv = $connection->execute("SELECT inventory.transactiontype, inventory.dateissued, inventory.timeissued, product.productname, inventory.weight FROM inventory INNER JOIN product ON inventory.productid = product.productid WHERE  inventory.dateissued = '$startdate' UNION SELECT sales.transactiontype, sales.dateissued, sales.timeissued, product.productname, sales.weight FROM sales INNER JOIN product ON sales.productid = product.productid WHERE sales.dateissued = '$startdate' ORDER BY STR_TO_DATE(dateissued, '%Y-%m-%d'), timeissued ASC")->fetchAll('assoc');
+            $inv = $connection->execute("SELECT inv.transactiontype, inv.dateissued, inv.timeissued, pro.productname, inv.weight FROM inventory as inv INNER JOIN product AS pro ON inv.productid = pro.productid WHERE inv.productid = '$productid' AND MONTH(dateissued) = '$month' AND YEAR(dateissued) = '$year' UNION SELECT sls.transactiontype, sls.dateissued, sls.timeissued, pro.productname, sls.weight FROM sales as sls INNER JOIN product as pro ON sls.productid = pro.productid WHERE sls.productid = '$productid' AND MONTH(dateissued) = '$month' AND YEAR(dateissued) = '$year' ORDER BY STR_TO_DATE(dateissued, '%Y-%m-%d'), timeissued ASC")->fetchAll('assoc');
+        }
+
+        echo json_encode($inv);
+    }
+
+    public function processendinginv()
+    {
+        $idArray = [];
+        $endinginvamnt = 0;
+
+        $month = $this->request->data('month');
+        $year = $this->request->data('year');
+
+        $this->autoRender = false;
+        $connection = ConnectionManager::get('default');
+        $results = $connection->execute("SELECT * FROM product")->fetchAll('assoc');
+
+        foreach ($results as $data) {
+            $idArray[] = $data['productid'];
+        }
+
+        if ($results = $connection->execute("SELECT EXISTS(SELECT endinginventoryid FROM endinginventory WHERE productid = '$idArray[$i]' AND month = )"))
+
+        //for ($i=0; $i < count($idArray); $i++) {
+            //echo $idArray[$i] + " ";
+        $results = $connection->execute("SELECT inv.transactiontype, inv.dateissued, inv.timeissued, pro.productname, inv.weight FROM inventory as inv INNER JOIN product AS pro ON inv.productid = pro.productid WHERE inv.productid = '1' AND MONTH(dateissued) = '$month' AND YEAR(sdateissued) = '$year' UNION SELECT sls.transactiontype, sls.dateissued, sls.timeissued, pro.productname, sls.weight FROM sales as sls INNER JOIN product as pro ON sls.productid = pro.productid WHERE sls.productid = '1' AND MONTH(dateissued) = '$month' AND YEAR(dateissued) = '$year' ORDER BY STR_TO_DATE(dateissued, '%Y-%m-%d'), timeissued ASC")->fetchAll('assoc');
+
+        foreach ($results as $data) {
+            if ($data['transactiontype'] == 'Sales') {
+                $endinginvamnt = $endinginvamnt - (int) $data['weight'];
+            } else {
+                $endinginvamnt = $endinginvamnt + (int) $data['weight'];
             }
         }
-        echo json_encode($inv);
+        //}
+        echo json_encode($endinginvamnt);
     }
 
      /**
