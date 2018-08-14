@@ -324,15 +324,21 @@ class StoreController extends AppController
     {
         $this->autoRender = false;
         $connection = ConnectionManager::get('default');
+
+        $month = $this->request->data('month');
+        $year = $this->request->data('year');
         $productid = $this->request->data('productid');
 
+        $checkmnth = (int) $month - 1;
+
         if ($productid != "ALL") {
-            $endinginv = $connection->execute("SELECT computedweight FROM endinginventory WHERE productid = '$productid'")->fetchAll('assoc');
+            $endinginv = $connection->execute("SELECT computedweight FROM endinginventory WHERE productid = '$productid' AND monthofinventory = '$checkmnth' AND yearofinventory = '$year'")->fetchAll('assoc');
         } else {
-            $endinginv = $connection->execute("SELECT computedweight FROM endinginventory")->fetchAll('assoc');
+            $endinginv = $connection->execute("SELECT computedweight FROM endinginventory WHERE monthofinventory = '$checkmnth' AND yearofinventory = '$year'")->fetchAll('assoc');
         }
 
         echo json_encode($endinginv);
+        //echo $checkmnth;
     }
 
     public function genreportinv()
@@ -358,35 +364,58 @@ class StoreController extends AppController
 
     public function processendinginv()
     {
+        $this->autoRender = false;
+
+        //variable sets
         $idArray = [];
+        $echoArray = [];
         $endinginvamnt = 0;
+        $finalendinginvamnt = 0;
 
         $month = $this->request->data('month');
         $year = $this->request->data('year');
 
-        $this->autoRender = false;
+        $checkmnth = (int) $month - 1;
+
+        //get product id's of existing products in the database table 'endinginventory'
         $connection = ConnectionManager::get('default');
         $results = $connection->execute("SELECT * FROM product")->fetchAll('assoc');
 
+        //inserts results to a local array
         foreach ($results as $data) {
             $idArray[] = $data['productid'];
         }
 
-        if ($results = $connection->execute("SELECT EXISTS(SELECT endinginventoryid FROM endinginventory WHERE productid = '$idArray[$i]' AND month = )"))
+        //checks if there is an existing record
+        $endinginvtable = TableRegistry::get('endinginventory');
+        for ($var = 0; $var < count($idArray); $var++) {
+            $exists = $endinginvtable->exists(['productid' => $idArray[$var], 'monthofinventory' => $checkmnth, 'yearofinventory' => $year]);
 
-        //for ($i=0; $i < count($idArray); $i++) {
-            //echo $idArray[$i] + " ";
-        $results = $connection->execute("SELECT inv.transactiontype, inv.dateissued, inv.timeissued, pro.productname, inv.weight FROM inventory as inv INNER JOIN product AS pro ON inv.productid = pro.productid WHERE inv.productid = '1' AND MONTH(dateissued) = '$month' AND YEAR(sdateissued) = '$year' UNION SELECT sls.transactiontype, sls.dateissued, sls.timeissued, pro.productname, sls.weight FROM sales as sls INNER JOIN product as pro ON sls.productid = pro.productid WHERE sls.productid = '1' AND MONTH(dateissued) = '$month' AND YEAR(dateissued) = '$year' ORDER BY STR_TO_DATE(dateissued, '%Y-%m-%d'), timeissued ASC")->fetchAll('assoc');
-
-        foreach ($results as $data) {
-            if ($data['transactiontype'] == 'Sales') {
-                $endinginvamnt = $endinginvamnt - (int) $data['weight'];
+            if ($exists == true) {
+                $echoArray[$var] = 'EXISTS';
             } else {
-                $endinginvamnt = $endinginvamnt + (int) $data['weight'];
+                $echoArray[$var] = 'DO NOT EXISTS';
+                    $results = $connection->execute("SELECT inv.transactiontype, inv.dateissued, inv.timeissued, pro.productname, inv.weight FROM inventory as inv INNER JOIN product AS pro ON inv.productid = pro.productid WHERE inv.productid = '$echoArray[$var]' AND MONTH(dateissued) = '$month' AND YEAR(dateissued) = '$year' UNION SELECT sls.transactiontype, sls.dateissued, sls.timeissued, pro.productname, sls.weight FROM sales as sls INNER JOIN product as pro ON sls.productid = pro.productid WHERE sls.productid = '1' AND MONTH(dateissued) = '$month' AND YEAR(dateissued) = '$year' ORDER BY STR_TO_DATE(dateissued, '%Y-%m-%d'), timeissued ASC")->fetchAll('assoc');
+
+                foreach ($results as $data) {
+                    if ($data['transactiontype'] == 'Sales') {
+                        $endinginvamnt = $endinginvamnt - (int) $data['weight'];
+                    } else {
+                        $endinginvamnt = $endinginvamnt + (int) $data['weight'];
+                    }
+                }
+
+                    $results = $connection->execute("SELECT computedweight FROM endinginventory WHERE productid = '$productid' AND monthofinventory = '$checkmnth' AND yearofinventory = '$year'")->fetchAll('assoc');
+
+                    $finalendinginvamnt = $endinginvamnt = (int) $results['computedweight'];
             }
         }
+
+        //echo json_encode($echoArray);
+        //print_r($echoArray);
+
         //}
-        echo json_encode($endinginvamnt);
+        // echo json_encode($endinginvamnt);
     }
 
      /**
