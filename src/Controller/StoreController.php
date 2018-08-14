@@ -362,23 +362,32 @@ class StoreController extends AppController
         echo json_encode($inv);
     }
 
-    public function processendinginv()
+
+    public function checkupdate()
     {
         $this->autoRender = false;
-
-        //variable sets
-        $idArray = [];
-        $echoArray = [];
-        $endinginvamnt = 0;
-        $finalendinginvamnt = 0;
-
-        $month = $this->request->data('month');
-        $year = $this->request->data('year');
-
-        $checkmnth = (int) $month - 1;
-
-        //get product id's of existing products in the database table 'endinginventory'
         $connection = ConnectionManager::get('default');
+
+        $id = $this->Auth->user('id');
+        $checkedresult = "";
+        $finalquery = "";
+        $alert = "";
+        $endinginvamnt = 0;
+        $idArray = [];
+        $tmpArr = [];
+        $tmpppppppArr = [];
+
+        //$date = $this->request->data('date');
+        //$month = $this->request->data('month');
+        //$year = $this->request->data('year');
+
+        $date = '2018-08-14';
+        $month = '8';
+        $year = '2018';
+
+        date_default_timezone_set('Asia/Manila');
+        $time = date('H:i:s');
+
         $results = $connection->execute("SELECT * FROM product")->fetchAll('assoc');
 
         //inserts results to a local array
@@ -386,36 +395,55 @@ class StoreController extends AppController
             $idArray[] = $data['productid'];
         }
 
-        //checks if there is an existing record
+        $checked = TableRegistry::get('updatechecking');
         $endinginvtable = TableRegistry::get('endinginventory');
-        for ($var = 0; $var < count($idArray); $var++) {
-            $exists = $endinginvtable->exists(['productid' => $idArray[$var], 'monthofinventory' => $checkmnth, 'yearofinventory' => $year]);
 
-            if ($exists == true) {
-                $echoArray[$var] = 'EXISTS';
-            } else {
-                $echoArray[$var] = 'DO NOT EXISTS';
-                    $results = $connection->execute("SELECT inv.transactiontype, inv.dateissued, inv.timeissued, pro.productname, inv.weight FROM inventory as inv INNER JOIN product AS pro ON inv.productid = pro.productid WHERE inv.productid = '$echoArray[$var]' AND MONTH(dateissued) = '$month' AND YEAR(dateissued) = '$year' UNION SELECT sls.transactiontype, sls.dateissued, sls.timeissued, pro.productname, sls.weight FROM sales as sls INNER JOIN product as pro ON sls.productid = pro.productid WHERE sls.productid = '1' AND MONTH(dateissued) = '$month' AND YEAR(dateissued) = '$year' ORDER BY STR_TO_DATE(dateissued, '%Y-%m-%d'), timeissued ASC")->fetchAll('assoc');
+        $exists = $checked->exists(['dateissued' => $date, 'checked' => true]); //checks if today has checked all endinginventory re-computations
 
-                foreach ($results as $data) {
-                    if ($data['transactiontype'] == 'Sales') {
-                        $endinginvamnt = $endinginvamnt - (int) $data['weight'];
+        if ($exists == true) {
+            $alert = "true";
+        } else {
+            $mnthdiff = (int) $month - 3; //difference of month with minimun number of 3
+
+            $tmp = 0;
+            for ($i=$mnthdiff; $i <= (int) $month; $i++) {
+                for ($var=0; $var < count($idArray); $var++) {
+                    $exists = $endinginvtable->exists(['productid' => $idArray[$var], 'monthofinventory' => $i, 'yearofinventory' => $year]); //endinginventorytable
+                    /*
+                        checks if month of endinginventory is existing, if false = compute and insert, if true = reo-compute and update
+                     */
+                    if ($exists == true) {
+                        $trigger = true;
                     } else {
-                        $endinginvamnt = $endinginvamnt + (int) $data['weight'];
+                        $trigger = false;
+                    }
+
+                    switch($trigger) {
+                    case true:
+                        break;
+                    case false;
+
+                        $results = $connection->execute("SELECT inv.transactiontype, inv.dateissued, inv.timeissued, pro.productname, inv.weight FROM inventory as inv INNER JOIN product AS pro ON inv.productid = pro.productid WHERE inv.productid = '$idArray[$var]' AND MONTH(dateissued) = '$i' AND YEAR(dateissued) = '$year' UNION SELECT sls.transactiontype, sls.dateissued, sls.timeissued, pro.productname, sls.weight FROM sales as sls INNER JOIN product as pro ON sls.productid = pro.productid WHERE sls.productid = '$idArray[$var]' AND MONTH(dateissued) = '$i' AND YEAR(dateissued) = '$year' ORDER BY STR_TO_DATE(dateissued, '%Y-%m-%d'), timeissued ASC")->fetchAll('assoc');
+
+                        foreach ($results as $data) {
+                            if ($data['transactiontype'] == 'Sales') {
+                                $endinginvamnt = $endinginvamnt - (int) $data['weight'];
+                            } else {
+                                $endinginvamnt = $endinginvamnt + (int) $data['weight'];
+                            }
+                        }
+
+                        $results_ = $connection->execute("SELECT computedweight FROM endinginventory WHERE productid = '$idArray[$var]' AND monthofinventory = '$checkmnth' AND yearofinventory = '$year'")->fetchAll('assoc');
+
+                        $finalendinginvamnt = $endinginvamnt + (int) $results_['computedweight'];
+                        //$finalquery = $connection->execute("INSERT INTO endinginventory SET productid = '$idArray[$var]', monthofinventory = '$i', yearofinventory = '$year', datecomputed = CURDATE(), timecomputed = '$time', computedweight = '$finalendinginvamnt', userid = '$id'");
+
+                        $endinginvamnt = 0;
+                        break;
                     }
                 }
-
-                    $results = $connection->execute("SELECT computedweight FROM endinginventory WHERE productid = '$productid' AND monthofinventory = '$checkmnth' AND yearofinventory = '$year'")->fetchAll('assoc');
-
-                    $finalendinginvamnt = $endinginvamnt = (int) $results['computedweight'];
             }
         }
-
-        //echo json_encode($echoArray);
-        //print_r($echoArray);
-
-        //}
-        // echo json_encode($endinginvamnt);
     }
 
      /**
