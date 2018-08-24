@@ -31,9 +31,6 @@ class AppController extends Controller
     public function beforeRender(Event $event)
     {
         $this->viewBuilder()->setTheme('AdminLTE');
-
-        // For CakePHP before 3.5
-        $this->viewBuilder()->theme('AdminLTE');
     }
     /**
      * Initialization hook method.

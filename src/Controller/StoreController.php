@@ -71,19 +71,25 @@ class StoreController extends AppController
 
     public function addproduct()
     {
-        $this->autoRender = false;
+        //$this->autoRender = false;
         $connection = ConnectionManager::get('default');
 
-        $name = $this->request->data('name');
-        $unitprice = $this->request->data('unitprice');
+        $name = $this->request->getData('name');
+        $unitprice = $this->request->getData('unitprice');
         $id = $this->Auth->user('id');
         $date = date('Y-m-d H:i:s');
 
-        if ($connection->execute("INSERT INTO product (productname, unitprice, created, userid) VALUES ('$name', '$unitprice', '$date', '$id')")) {
+        $fileName = $this->request->getParam('controller');
+        $uploadPath =  WWW_ROOT.'img/';
+        $uploadFile = $uploadPath.$fileName;
+
+        if (move_uploaded_file($this->request->getParam('controller'), $uploadFile)) {
+            //DB query goes here
+            $connection->execute("INSERT INTO product (productname, unitprice, created, userid, image) VALUES ('$name', '$unitprice', '$date', '$id', '$uploadFile')");
             $this->redirect(['action' => 'productpage']);
             $this->Flash->success(__('Product succesfully added.'));
         } else {
-            $this->Flash->error(__('Unable to add the product.'));
+                        $this->Flash->error(__('Unable to add the product.'));
             return $this->redirect(['action' => 'productpage']);
         }
     }
@@ -112,6 +118,7 @@ class StoreController extends AppController
         $connection = ConnectionManager::get('default');
         $results = $connection->execute("SELECT * FROM users")->fetchAll('assoc');
         echo json_encode($results);
+        die();
     }
 
     public function viewproduct()
@@ -120,6 +127,7 @@ class StoreController extends AppController
         $connection = ConnectionManager::get('default');
         $results = $connection->execute("SELECT * FROM product")->fetchAll('assoc');
         echo json_encode($results);
+        die();
     }
 
     public function viewsofi()
@@ -128,6 +136,7 @@ class StoreController extends AppController
         $connection = ConnectionManager::get('default');
         $results = $connection->execute("SELECT * FROM sourceofinventory")->fetchAll('assoc');
         echo json_encode($results);
+        die();
     }
 
     public function updateuser()
@@ -135,16 +144,16 @@ class StoreController extends AppController
         $this->autoRender = false;
         $connection = ConnectionManager::get('default');
 
-        $varid = (int) $this->request->data('id');
+        $varid = (int) $this->request->getData('id');
 
-        $varusern = $this->request->data('username');
-        $varpass = $this->request->data('password');
-        $varln = $this->request->data('lastname');
-        $varfn = $this->request->data('firstname');
-        $varmn = $this->request->data('middlename');
-        $varrole = $this->request->data('role');
-        $varpos = $this->request->data('position');
-        $varbranch = $this->request->data('branch');
+        $varusern = $this->request->getData('username');
+        $varpass = $this->request->getData('password');
+        $varln = $this->request->getData('lastname');
+        $varfn = $this->request->getData('firstname');
+        $varmn = $this->request->getData('middlename');
+        $varrole = $this->request->getData('role');
+        $varpos = $this->request->getData('position');
+        $varbranch = $this->request->getData('branch');
 
         if ($connection->execute("UPDATE users SET username = '$varusern', password = '$varpass', lastname = '$varln', firstname = '$varfn', middlename = '$varmn', role = '$varrole', position = '$varpos', branch = '$varbranch', modified = UTC_TIMESTAMP()  WHERE  id = '$varid'")) {
             $this->redirect(['action' => 'userspage']);
@@ -160,12 +169,12 @@ class StoreController extends AppController
         $this->autoRender = false;
         $connection = ConnectionManager::get('default');
 
-        $varid = (int) $this->request->data('productid');
+        $varid = (int) $this->request->getData('productid');
 
-        $varname = $this->request->data('name');
-        $varunitprice = $this->request->data('unitprice');
+        $varname = $this->request->getData('name');
+        $varunitprice = $this->request->getData('unitprice');
 
-        if ($connection->execute("UPDATE product SET name = '$varname', unitprice = '$varunitprice' WHERE  productid = '$varid'")) {
+        if ($connection->execute("UPDATE product SET productname = '$varname', unitprice = '$varunitprice' WHERE  productid = '$varid'")) {
             $this->redirect(['action' => 'productpage']);
             $this->Flash->success(__('Product succesfully updated.'));
         } else {
@@ -179,8 +188,8 @@ class StoreController extends AppController
         $this->autoRender = false;
         $connection = ConnectionManager::get('default');
 
-        $varid = (int) $this->request->data('editid');
-        $varname = $this->request->data('name');
+        $varid = (int) $this->request->getData('editid');
+        $varname = $this->request->getData('name');
 
         if ($connection->execute("UPDATE sourceofinventory SET name = '$varname' WHERE  sourceid = '$varid'")) {
             $this->redirect(['action' => 'sofipage']);
@@ -196,6 +205,7 @@ class StoreController extends AppController
         $this->autoRender = false;
         $results = $this->Auth->user('id');
         echo json_encode($results);
+        die();
     }
 
     public function addinventory()
@@ -203,15 +213,15 @@ class StoreController extends AppController
         $this->autoRender = false;
         $connection = ConnectionManager::get('default');
 
-        $productid = $this->request->data('productid');
-        $sourceid = $this->request->data('sourceid');
-        $userid = $this->request->data('userid');
+        $productid = $this->request->getData('productid');
+        $sourceid = $this->request->getData('sourceid');
+        $userid = $this->request->getData('userid');
         $id = $this->Auth->user('id');
 
-        $weight = $this->request->data('weight');
-        $unitprice = $this->request->data('unitprice');
+        $weight = $this->request->getData('weight');
+        $unitprice = $this->request->getData('unitprice');
 
-        $totalinventory = $this->request->data('totalinventory'); //new record for inventory
+        $totalinventory = $this->request->getData('totalinventory'); //new record for inventory
 
         date_default_timezone_set('Asia/Manila');
 
@@ -234,23 +244,25 @@ class StoreController extends AppController
         $this->autoRender = false;
         $connection = ConnectionManager::get('default');
 
-        $productid = $this->request->data('productid');
+        $productid = $this->request->getData('productid');
         $id = $this->Auth->user('id');
 
-        $price = $this->request->data('price');
-        $weight = $this->request->data('weight');
-        $amountdue = $this->request->data('amountdue');
-        $lessdiscount = $this->request->data('lessdiscount');
-        $netamountdue = $this->request->data('netamountdue');
-        $amounttender = $this->request->data('amounttender');
+        $price = $this->request->getData('price');
+        $weight = $this->request->getData('weight');
+        $currentinv = $this->request->getData('currentinv');
+        $amountdue = $this->request->getData('amountdue');
+        $lessdiscount = $this->request->getData('lessdiscount');
+        $netamountdue = $this->request->getData('netamountdue');
+        $amounttender = $this->request->getData('amounttender');
 
-        $change = $this->request->data('change');
+        $change = $this->request->getData('change');
 
         date_default_timezone_set('Asia/Manila');
 
         $time = date('H:i:s');
 
-        if ($connection->execute("INSERT INTO sales SET productid = '$productid', price = '$price', weight = '$weight', amountdue = '$amountdue', lessdiscount = '$lessdiscount', netamountdue = '$netamountdue', amounttender = '$amounttender', amountchange = '$change', dateissued = CURDATE(), timeissued = '$time', id = '$id'")) {
+        if ($weight < $currentinv && $amounttender == $amountdue) {
+            $connection->execute("INSERT INTO sales SET productid = '$productid', price = '$price', weight = '$weight', amountdue = '$amountdue', lessdiscount = '$lessdiscount', netamountdue = '$netamountdue', amounttender = '$amounttender', amountchange = '$change', dateissued = CURDATE(), timeissued = '$time', id = '$id'");
             $this->redirect(['action' => 'posmenupage']);
             $this->Flash->success(__('Sale succesfully added.'));
         } else {
@@ -264,27 +276,28 @@ class StoreController extends AppController
         $this->autoRender = false;
         $connection = ConnectionManager::get('default');
 
-        $startdate = $this->request->data('startdate');
-        $enddate = $this->request->data('enddate');
-        $productid = $this->request->data('productid');
+        $startdate = $this->request->getData('startdate');
+        $enddate = $this->request->getData('enddate');
+        $productid = $this->request->getData('productid');
 
         $dateA = date("Y-m-d", strtotime($startdate));
         $dateB = date("Y-m-d", strtotime($enddate));
 
         if ($startdate == $enddate) {
             if ($productid == "ALL") {
-                $sales = $connection->execute("SELECT sales.salesid, product.productname, sales.price, sales.weight, sales.amountdue, sales.lessdiscount, sales.netamountdue, sales.amounttender, sales.amountchange, sales.dateissued, users.username FROM sales INNER JOIN product ON sales.productid=product.productid INNER JOIN users ON sales.id=users.id WHERE sales.dateissued = '$dateA'")->fetchAll('assoc');
+                $sales = $connection->execute("SELECT product.productname, sales.price, sales.weight, sales.amountdue, sales.lessdiscount, sales.netamountdue, sales.amounttender, sales.amountchange, DATE_FORMAT(sales.dateissued, '%m-%d-%Y') as dateissued, sales.timeissued FROM sales INNER JOIN product ON sales.productid=product.productid WHERE dateissued = '$dateA'")->fetchAll('assoc');
             } elseif ($productid != "ALL") {
-                 $sales = $connection->execute("SELECT sales.salesid, product.productname, sales.price, sales.weight, sales.amountdue, sales.lessdiscount, sales.netamountdue, sales.amounttender, sales.amountchange, sales.dateissued, users.username FROM sales INNER JOIN product ON sales.productid=product.productid INNER JOIN users ON sales.id=users.id WHERE sales.dateissued = '$dateA' AND sales.productid = '$productid'")->fetchAll('assoc');
+                 $sales = $connection->execute("SELECT product.productname, sales.price, sales.weight, sales.amountdue, sales.lessdiscount, sales.netamountdue, sales.amounttender, sales.amountchange, DATE_FORMAT(sales.dateissued, '%m-%d-%Y') as dateissued, sales.timeissued FROM sales INNER JOIN product ON sales.productid=product.productid WHERE dateissued = '$dateA' AND sales.productid = '$productid'")->fetchAll('assoc');
             }
         } else {
             if ($productid == "ALL") {
-                $sales = $connection->execute("SELECT sales.salesid, product.productname, sales.price, sales.weight, sales.amountdue, sales.lessdiscount, sales.netamountdue, sales.amounttender, sales.amountchange, sales.dateissued, users.username FROM sales INNER JOIN product ON sales.productid=product.productid INNER JOIN users ON sales.id=users.id WHERE sales.dateissued BETWEEN '$dateA' AND '$dateB'")->fetchAll('assoc');
+                $sales = $connection->execute("SELECT product.productname, sales.price, sales.weight, sales.amountdue, sales.lessdiscount, sales.netamountdue, sales.amounttender, sales.amountchange, DATE_FORMAT(sales.dateissued, '%m-%d-%Y') as dateissued, sales.timeissued FROM sales INNER JOIN product ON sales.productid=product.productid WHERE dateissued BETWEEN '$dateA' AND '$dateB'")->fetchAll('assoc');
             } elseif ($productid != "ALL") {
-                 $sales = $connection->execute("SELECT sales.salesid, product.productname, sales.price, sales.weight, sales.amountdue, sales.lessdiscount, sales.netamountdue, sales.amounttender, sales.amountchange, sales.dateissued, users.username FROM sales INNER JOIN product ON sales.productid=product.productid INNER JOIN users ON sales.id=users.id WHERE sales.dateissued BETWEEN '$dateA' AND '$dateB' AND sales.productid = '$productid'")->fetchAll('assoc');
+                 $sales = $connection->execute("SELECT product.productname, sales.price, sales.weight, sales.amountdue, sales.lessdiscount, sales.netamountdue, sales.amounttender, sales.amountchange, DATE_FORMAT(sales.dateissued, '%m-%d-%Y') as dateissued, sales.timeissued FROM sales INNER JOIN product ON sales.productid=product.productid WHERE dateissued BETWEEN '$dateA' AND '$dateB' AND sales.productid = '$productid'")->fetchAll('assoc');
             }
         }
         echo json_encode($sales);
+        die();
     }
 
     public function genreportpurchases()
@@ -292,32 +305,33 @@ class StoreController extends AppController
         $this->autoRender = false;
         $connection = ConnectionManager::get('default');
 
-        $startdate = $this->request->data('startdate');
-        $enddate = $this->request->data('enddate');
-        $productid = $this->request->data('productid');
-        $sourceid = $this->request->data('sourceid');
+        $startdate = $this->request->getData('startdate');
+        $enddate = $this->request->getData('enddate');
+        $productid = $this->request->getData('productid');
+        $sourceid = $this->request->getData('sourceid');
 
         $dateA = date("Y-m-d", strtotime($startdate));
         $dateB = date("Y-m-d", strtotime($enddate));
 
         if ($startdate == $enddate) {
             if ($productid == "ALL" && $sourceid == "ALL") {
-                $purchases = $connection->execute("SELECT inventory.inventoryid, product.productname, sourceofinventory.name, inventory.weight, inventory.unitprice, inventory.totalinventory, inventory.dateissued, users.username FROM inventory INNER JOIN product ON inventory.productid=product.productid INNER JOIN sourceofinventory ON inventory.sourceid=sourceofinventory.sourceid INNER JOIN users ON inventory.id=users.id WHERE inventory.dateissued = '$dateA'")->fetchAll('assoc');
+                $purchases = $connection->execute("SELECT product.productname, sourceofinventory.name, inventory.weight, inventory.unitprice, inventory.totalinventory, DATE_FORMAT(inventory.dateissued, '%m-%d-%Y') as dateissued, inventory.timeissued FROM inventory INNER JOIN product ON inventory.productid=product.productid INNER JOIN sourceofinventory ON inventory.sourceid=sourceofinventory.sourceid WHERE dateissued = '$dateA'")->fetchAll('assoc');
             } elseif ($productid != "ALL" && $sourceid == "ALL") {
-                 $purchases = $connection->execute("SELECT inventory.inventoryid, product.productname, sourceofinventory.name, inventory.weight, inventory.unitprice, inventory.totalinventory, inventory.dateissued, users.username FROM inventory INNER JOIN product ON inventory.productid=product.productid INNER JOIN sourceofinventory ON inventory.sourceid=sourceofinventory.sourceid INNER JOIN users ON inventory.id=users.id WHERE inventory.dateissued = '$dateA' AND inventory.productid = '$productid'")->fetchAll('assoc');
+                 $purchases = $connection->execute("SELECT product.productname, sourceofinventory.name, inventory.weight, inventory.unitprice, inventory.totalinventory, DATE_FORMAT(inventory.dateissued, '%m-%d-%Y') as dateissued, inventory.timeissued FROM inventory INNER JOIN product ON inventory.productid=product.productid INNER JOIN sourceofinventory ON inventory.sourceid=sourceofinventory.sourceid WHERE dateissued = '$dateA' AND inventory.productid = '$productid'")->fetchAll('assoc');
             } elseif ($productid != "ALL" && $sourceid != "ALL") {
-                $purchases = $connection->execute("SELECT inventory.inventoryid, product.productname, sourceofinventory.name, inventory.weight, inventory.unitprice, inventory.totalinventory, inventory.dateissued, users.username FROM inventory INNER JOIN product ON inventory.productid=product.productid INNER JOIN sourceofinventory ON inventory.sourceid=sourceofinventory.sourceid INNER JOIN users ON inventory.id=users.id WHERE inventory.dateissued = '$dateA' AND inventory.productid = '$productid' AND inventory.sourceid = '$sourceid'")->fetchAll('assoc');
+                $purchases = $connection->execute("SELECT product.productname, sourceofinventory.name, inventory.weight, inventory.unitprice, inventory.totalinventory, DATE_FORMAT(inventory.dateissued, '%m-%d-%Y') as dateissued, inventory.timeissued FROM inventory INNER JOIN product ON inventory.productid=product.productid INNER JOIN sourceofinventory ON inventory.sourceid=sourceofinventory.sourceid WHERE dateissued = '$dateA' AND inventory.productid = '$productid' AND inventory.sourceid = '$sourceid'")->fetchAll('assoc');
             }
         } else {
             if ($productid == "ALL" && $sourceid == "ALL") {
-                $purchases = $connection->execute("SELECT inventory.inventoryid, product.productname, sourceofinventory.name, inventory.weight, inventory.unitprice, inventory.totalinventory, inventory.dateissued, users.username FROM inventory INNER JOIN product ON inventory.productid=product.productid INNER JOIN sourceofinventory ON inventory.sourceid=sourceofinventory.sourceid INNER JOIN users ON inventory.id=users.id WHERE inventory.dateissued BETWEEN '$dateA' AND '$dateB'")->fetchAll('assoc');
+                $purchases = $connection->execute("SELECT product.productname, sourceofinventory.name, inventory.weight, inventory.unitprice, inventory.totalinventory, DATE_FORMAT(inventory.dateissued, '%m-%d-%Y') as dateissued, inventory.timeissued FROM inventory INNER JOIN product ON inventory.productid=product.productid INNER JOIN sourceofinventory ON inventory.sourceid=sourceofinventory.sourceid WHERE dateissued BETWEEN '$dateA' AND '$dateB'")->fetchAll('assoc');
             } elseif ($productid != "ALL" && $sourceid == "ALL") {
-                 $purchases = $connection->execute("SELECT inventory.inventoryid, product.productname, sourceofinventory.name, inventory.weight, inventory.unitprice, inventory.totalinventory, inventory.dateissued, users.username FROM inventory INNER JOIN product ON inventory.productid=product.productid INNER JOIN sourceofinventory ON inventory.sourceid=sourceofinventory.sourceid INNER JOIN users ON inventory.id=users.id WHERE inventory.dateissued BETWEEN '$dateA' AND '$dateB' AND inventory.productid = '$productid'")->fetchAll('assoc');
+                 $purchases = $connection->execute("SELECT product.productname, sourceofinventory.name, inventory.weight, inventory.unitprice, inventory.totalinventory, DATE_FORMAT(inventory.dateissued, '%m-%d-%Y') as dateissued, inventory.timeissued  FROM inventory INNER JOIN product ON inventory.productid=product.productid INNER JOIN sourceofinventory ON inventory.sourceid=sourceofinventory.sourceid WHERE dateissued BETWEEN '$dateA' AND '$dateB' AND inventory.productid = '$productid'")->fetchAll('assoc');
             } elseif ($productid != "ALL" && $sourceid != "ALL") {
-                $purchases = $connection->execute("SELECT inventory.inventoryid, product.productname, sourceofinventory.name, inventory.weight, inventory.unitprice, inventory.totalinventory, inventory.dateissued, users.username FROM inventory INNER JOIN product ON inventory.productid=product.productid INNER JOIN sourceofinventory ON inventory.sourceid=sourceofinventory.sourceid INNER JOIN users ON inventory.id=users.id WHERE inventory.dateissued BETWEEN '$dateA' AND '$dateB' AND inventory.productid = '$productid' AND inventory.sourceid = '$sourceid'")->fetchAll('assoc');
+                $purchases = $connection->execute("SELECT product.productname, sourceofinventory.name, inventory.weight, inventory.unitprice, inventory.totalinventory, DATE_FORMAT(inventory.dateissued, '%m-%d-%Y') as dateissued, inventory.timeissued FROM inventory INNER JOIN product ON inventory.productid=product.productid INNER JOIN sourceofinventory ON inventory.sourceid=sourceofinventory.sourceid WHERE dateissued BETWEEN '$dateA' AND '$dateB' AND inventory.productid = '$productid' AND inventory.sourceid = '$sourceid'")->fetchAll('assoc');
             }
         }
         echo json_encode($purchases);
+        die();
     }
 
     public function getendinginventory()
@@ -325,10 +339,9 @@ class StoreController extends AppController
         $this->autoRender = false;
         $connection = ConnectionManager::get('default');
 
-        $month = $this->request->data('month');
-        $year = $this->request->data('year');
-        $productid = $this->request->data('productid');
-
+        $month = $this->request->getData('month');
+        $year = $this->request->getData('year');
+        $productid = $this->request->getData('productid');
         $checkmnth = (int) $month - 1;
 
         if ($productid != "ALL") {
@@ -338,6 +351,23 @@ class StoreController extends AppController
         }
 
         echo json_encode($endinginv);
+        die();
+    }
+
+    public function getallendinginventory()
+    {
+        //spanIDc_inv
+        $this->autoRender = false;
+        $connection = ConnectionManager::get('default');
+
+        $month = $this->request->getData('month');
+        $year = $this->request->getData('year');
+        //$productid = $this->request->data('productid');
+
+        $endinginv = $connection->execute("SELECT * FROM endinginventory WHERE monthofinventory = '$month' AND yearofinventory = '$year'")->fetchAll('assoc');
+
+        echo json_encode($endinginv);
+        die();
     }
 
     public function genreportinv()
@@ -345,20 +375,20 @@ class StoreController extends AppController
         $this->autoRender = false;
         $connection = ConnectionManager::get('default');
 
-        $month = $this->request->data('month');
-        $year = $this->request->data('year');
-        $productid = $this->request->data('productid');
+        $month = $this->request->getData('month');
+        $year = $this->request->getData('year');
+        $productid = $this->request->getData('productid');
         //$lmwinv = $this->request->data('month'); - 1;
 
         $tbl = "";
 
         if ($productid == "ALL") {
-            $inv = $connection->execute("SELECT inv.transactiontype, inv.dateissued, inv.timeissued, pro.productname, inv.weight FROM inventory as inv INNER JOIN product AS pro ON inv.productid = pro.productid WHERE MONTH(dateissued) = '$month' AND YEAR(dateissued) = '$year' AND YEAR(dateissued) = '$year' UNION SELECT sls.transactiontype, sls.dateissued, sls.timeissued, pro.productname, sls.weight FROM sales as sls INNER JOIN product as pro ON sls.productid = pro.productid  WHERE MONTH(dateissued) = '$month'  AND YEAR(dateissued) = '$year' AND YEAR(dateissued) = '$year' ORDER BY STR_TO_DATE(dateissued, '%Y-%m-%d'), timeissued ASC")->fetchAll('assoc');
+            $inv = $connection->execute("SELECT inv.transactiontype, DATE_FORMAT(inv.dateissued, '%m-%d-%Y') as dateissued, inv.timeissued, pro.productname, inv.weight FROM inventory as inv INNER JOIN product AS pro ON inv.productid = pro.productid WHERE MONTH(dateissued) = '$month' AND YEAR(dateissued) = '$year' UNION SELECT sls.transactiontype, DATE_FORMAT(sls.dateissued, '%m-%d-%Y') as dateissued, sls.timeissued, pro.productname, sls.weight FROM sales as sls INNER JOIN product as pro ON sls.productid = pro.productid WHERE MONTH(dateissued) = '$month' AND YEAR(dateissued) = '$year' ORDER BY dateissued, timeissued ASC")->fetchAll('assoc');
         } else {
-            $inv = $connection->execute("SELECT inv.transactiontype, inv.dateissued, inv.timeissued, pro.productname, inv.weight FROM inventory as inv INNER JOIN product AS pro ON inv.productid = pro.productid WHERE inv.productid = '$productid' AND MONTH(dateissued) = '$month' AND YEAR(dateissued) = '$year' UNION SELECT sls.transactiontype, sls.dateissued, sls.timeissued, pro.productname, sls.weight FROM sales as sls INNER JOIN product as pro ON sls.productid = pro.productid WHERE sls.productid = '$productid' AND MONTH(dateissued) = '$month' AND YEAR(dateissued) = '$year' ORDER BY STR_TO_DATE(dateissued, '%Y-%m-%d'), timeissued ASC")->fetchAll('assoc');
+            $inv = $connection->execute("SELECT inv.transactiontype, DATE_FORMAT(inv.dateissued, '%m-%d-%Y') as dateissued, inv.timeissued, pro.productname, inv.weight FROM inventory as inv INNER JOIN product AS pro ON inv.productid = pro.productid WHERE inv.productid = '$productid' AND MONTH(dateissued) = '$month' AND YEAR(dateissued) = '$year' UNION SELECT sls.transactiontype, DATE_FORMAT(sls.dateissued, '%m-%d-%Y') as dateissued, sls.timeissued, pro.productname, sls.weight FROM sales as sls INNER JOIN product as pro ON sls.productid = pro.productid WHERE sls.productid = '$productid' AND MONTH(dateissued) = '$month' AND YEAR(dateissued) = '$year' ORDER BY dateissued, timeissued ASC")->fetchAll('assoc');
         }
-
         echo json_encode($inv);
+        die();
     }
 
 
@@ -376,15 +406,12 @@ class StoreController extends AppController
         $fmnthlyendinginvamnt = 0;
         $idArray = [];
 
-        $date = $this->request->data('date');
-        $month = $this->request->data('month');
-        $year = $this->request->data('year');
+        $date = $this->request->getData('date');
+        $month = $this->request->getData('month');
+        $year = $this->request->getData('year');
 
         date_default_timezone_set('Asia/Manila');
         $time = date('H:i:s');
-
-        //$checked = TableRegistry::get('updatechecking');
-        //$exists = $checked->exists(['dateissued' => $date, 'checked' => true]); //checks if today has checked all endinginventory re-computations
 
         $results = $connection->execute("SELECT * FROM product")->fetchAll('assoc');
         //inserts results to a local array
@@ -398,7 +425,6 @@ class StoreController extends AppController
         for ($i=$mnthdiff; $i <= (int) $month; $i++) {
 
             for ($var=0; $var < count($idArray); $var++) {
-                echo $idArray[$var];
                 $exists = $endinginvtable->exists(['productid' => $idArray[$var], 'monthofinventory' => $i, 'yearofinventory' => $year]); //endinginventorytable
                 /*
                     checks if month of endinginventory is existing, if false = compute and insert, if true = reo-compute and update
@@ -407,9 +433,9 @@ class StoreController extends AppController
 
                 foreach ($results as $data) {
                     if ($data['transactiontype'] == 'Sales') {
-                        $mnthlyendinginvamnt = $mnthlyendinginvamnt - (int) $data['weight'];
+                        $mnthlyendinginvamnt = $mnthlyendinginvamnt - (float) $data['weight'];
                     } else {
-                        $mnthlyendinginvamnt = $mnthlyendinginvamnt + (int) $data['weight'];
+                        $mnthlyendinginvamnt = $mnthlyendinginvamnt + (float) $data['weight'];
                     }
                 }
 
@@ -417,7 +443,7 @@ class StoreController extends AppController
                 $results_ = $connection->execute("SELECT computedweight FROM endinginventory WHERE productid = '$idArray[$var]' AND monthofinventory = '$pmonth' AND yearofinventory = '$year'")->fetchAll('assoc');
 
                 foreach ($results_ as $data) {
-                    $fmnthlyendinginvamnt = $mnthlyendinginvamnt + (int) $data['computedweight'];
+                    $fmnthlyendinginvamnt = $mnthlyendinginvamnt + sprintf('%.2f', $data['computedweight']);
                 }
 
                 switch($exists) {
@@ -432,6 +458,10 @@ class StoreController extends AppController
                 }
             }
         }
+
+        $endinginv = $connection->execute("SELECT * FROM endinginventory WHERE monthofinventory = '$month' AND yearofinventory = '$year'")->fetchAll('assoc');
+        echo json_encode($endinginv);
+        die();
     }
 
      /**
