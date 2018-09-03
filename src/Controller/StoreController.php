@@ -51,6 +51,11 @@ class StoreController extends AppController
         $this->render('inventoryreport');
     }
 
+    public function loaddashboard()
+    {
+        $this->render('dashboard');
+    }
+
     public function adduser()
     {
         $this->loadModel('Users');
@@ -79,11 +84,11 @@ class StoreController extends AppController
         $id = $this->Auth->user('id');
         $date = date('Y-m-d H:i:s');
 
-        $fileName = $this->request->getParam('controller');
+        $fileName = $this->request->data['image']['name'];
         $uploadPath =  WWW_ROOT.'img/';
         $uploadFile = $uploadPath.$fileName;
 
-        if (move_uploaded_file($this->request->getParam('controller'), $uploadFile)) {
+        if (move_uploaded_file($this->request->data['image']['tmp_name'], $uploadFile)) {
             //DB query goes here
             $connection->execute("INSERT INTO product (productname, unitprice, created, userid, image) VALUES ('$name', '$unitprice', '$date', '$id', '$uploadFile')");
             $this->redirect(['action' => 'productpage']);
@@ -126,6 +131,18 @@ class StoreController extends AppController
         $this->autoRender = false;
         $connection = ConnectionManager::get('default');
         $results = $connection->execute("SELECT * FROM product")->fetchAll('assoc');
+        echo json_encode($results);
+        die();
+    }
+
+    public function searchprods()
+    {
+        $this->autoRender = false;
+        $connection = ConnectionManager::get('default');
+
+        $proddata = $this->request->getData('proddata');
+
+        $results = $connection->execute("SELECT * FROM product WHERE productname LIKE '%$proddata%'")->fetchAll('assoc');
         echo json_encode($results);
         die();
     }
@@ -174,11 +191,17 @@ class StoreController extends AppController
         $varname = $this->request->getData('name');
         $varunitprice = $this->request->getData('unitprice');
 
-        if ($connection->execute("UPDATE product SET productname = '$varname', unitprice = '$varunitprice' WHERE  productid = '$varid'")) {
+        $fileName = $this->request->data['editimage']['name'];
+        $uploadPath =  WWW_ROOT.'img/';
+        $uploadFile = $uploadPath.$fileName;
+
+        if (move_uploaded_file($this->request->data['editimage']['tmp_name'], $uploadFile)) {
+            //DB query goes here
+            $connection->execute("UPDATE product SET productname = '$varname', unitprice = '$varunitprice', image = '$uploadFile' WHERE  productid = '$varid'");
             $this->redirect(['action' => 'productpage']);
             $this->Flash->success(__('Product succesfully updated.'));
         } else {
-            $this->Flash->error(__('Unable to update the product.'));
+                        $this->Flash->error(__('Unable to update the product.'));
             return $this->redirect(['action' => 'productpage']);
         }
     }
@@ -224,10 +247,6 @@ class StoreController extends AppController
         $totalinventory = $this->request->getData('totalinventory'); //new record for inventory
 
         date_default_timezone_set('Asia/Manila');
-
-        //$date = date('m-d-Y');
-        //$time = date('H:i:s');
-
         $time = date('H:i:s');
 
         if ($connection->execute("INSERT INTO inventory SET productid = '$productid', sourceid = '$sourceid', weight = '$weight', unitprice = '$unitprice', totalinventory = '$totalinventory', dateissued = CURDATE(), timeissued = '$time', id = '$id'")) {
@@ -433,9 +452,9 @@ class StoreController extends AppController
 
                 foreach ($results as $data) {
                     if ($data['transactiontype'] == 'Sales') {
-                        $mnthlyendinginvamnt = $mnthlyendinginvamnt - (float) $data['weight'];
+                        $mnthlyendinginvamnt = $mnthlyendinginvamnt - (float) str_replace(",", "", $data['weight']);
                     } else {
-                        $mnthlyendinginvamnt = $mnthlyendinginvamnt + (float) $data['weight'];
+                        $mnthlyendinginvamnt = $mnthlyendinginvamnt + (float) str_replace(",", "", $data['weight']);
                     }
                 }
 
@@ -462,6 +481,77 @@ class StoreController extends AppController
         $endinginv = $connection->execute("SELECT * FROM endinginventory WHERE monthofinventory = '$month' AND yearofinventory = '$year'")->fetchAll('assoc');
         echo json_encode($endinginv);
         die();
+    }
+
+    public function dashboardcomp()
+    {
+        $this->autoRender = false;
+        $connection = ConnectionManager::get('default');
+
+        $result = array();
+        $date = $this->request->getData('date');
+        $month = $this->request->getData('month');
+        $day = $this->request->getData('day');
+        $year = $this->request->getData('year');
+
+        //salescount
+        $sales = $connection->execute("SELECT weight as wt FROM sales WHERE DAY(dateissued) = '$day'")->fetchAll('assoc');
+
+        $computesales = 0;
+        foreach ($sales as $data) {
+            $computesales = $computesales + (float) str_replace(',', '', $data['wt']);
+        }
+
+        $result[0] = $computesales;
+        //purchasescount
+        $purchases = $connection->execute("SELECT weight as wt FROM inventory WHERE DAY(dateissued) = '$day'")->fetchAll('assoc');
+
+        $computepurchases = 0;
+        foreach ($purchases as $data) {
+            $computepurchases = $computepurchases + (float) str_replace(',', '', $data['wt']);
+        }
+
+        $result[1] = $computepurchases;
+
+        //currentinventory weight
+        $endinginv = $connection->execute("SELECT computedweight FROM endinginventory WHERE monthofinventory = '$month' AND yearofinventory = '$year'")->fetchAll('assoc');
+
+        $computeinv = 0;
+        foreach ($endinginv as $data) {
+            $computeinv = $computeinv + (float) $data['computedweight'];
+        }
+
+        $result[2] = $computeinv;
+
+        //$result[3] = $connection->execute("SELECT COUNT(sls.salesid) as id, sls.dateissued as dateissued, sls.timeissued as timeissued FROM sales as sls INNER JOIN product as pro ON sls.productid = pro.productid WHERE MONTH(dateissued) = '$month' AND YEAR(dateissued) = '$year' ORDER BY dateissued, timeissued ASC")->fetchAll('assoc');
+
+        //transactioncount
+        $salesrecord = $connection->execute("SELECT COUNT(salesid) as id FROM sales")->fetchAll('assoc');
+        $invrecord = $connection->execute("SELECT COUNT(inventoryid) as id FROM inventory")->fetchAll('assoc');
+
+        //$result[3] = (int) $salesrecord + (int) $invrecord;
+        $result[3] = $salesrecord;
+        $result[4] = $invrecord;
+
+        //barchart
+        //sales
+        for($i = 0; $i < 12; $i++) {
+            $mnth = $i + 1;
+            $result[5][$i] = $connection->execute("SELECT COUNT(salesid) as id FROM sales WHERE MONTH(dateissued) = '$mnth'")->fetchAll('assoc');
+        }
+        //purchases
+        for($i = 0; $i < 12; $i++) {
+            $mnth = $i + 1;
+            $result[6][$i] = $connection->execute("SELECT COUNT(inventoryid) as id FROM inventory WHERE MONTH(dateissued) = '$mnth'")->fetchAll('assoc');
+        }
+
+
+        //$salesrecord = $connection->execute("SELECT COUNT(salesid) as id FROM sales")->fetchAll('assoc');
+
+
+        echo json_encode($result);
+        die();
+
     }
 
      /**
