@@ -139,7 +139,6 @@ class StoreController extends AppController
     {
         $this->autoRender = false;
         $connection = ConnectionManager::get('default');
-
         $proddata = $this->request->getData('proddata');
 
         $results = $connection->execute("SELECT * FROM product WHERE productname LIKE '%$proddata%'")->fetchAll('assoc');
@@ -280,7 +279,7 @@ class StoreController extends AppController
 
         $time = date('H:i:s');
 
-        if ($weight < $currentinv && $amounttender == $amountdue) {
+        if ((float) str_replace(',', '', $weight) <= (float) str_replace(',', '', $currentinv) ) {
             $connection->execute("INSERT INTO sales SET productid = '$productid', price = '$price', weight = '$weight', amountdue = '$amountdue', lessdiscount = '$lessdiscount', netamountdue = '$netamountdue', amounttender = '$amounttender', amountchange = '$change', dateissued = CURDATE(), timeissued = '$time', id = '$id'");
             $this->redirect(['action' => 'posmenupage']);
             $this->Flash->success(__('Sale succesfully added.'));
@@ -495,8 +494,7 @@ class StoreController extends AppController
         $year = $this->request->getData('year');
 
         //salescount
-        $sales = $connection->execute("SELECT weight as wt FROM sales WHERE DAY(dateissued) = '$day'")->fetchAll('assoc');
-
+        $sales = $connection->execute("SELECT netamountdue as wt FROM sales WHERE DAY(dateissued) = '$day'")->fetchAll('assoc');
         $computesales = 0;
         foreach ($sales as $data) {
             $computesales = $computesales + (float) str_replace(',', '', $data['wt']);
@@ -504,7 +502,7 @@ class StoreController extends AppController
 
         $result[0] = $computesales;
         //purchasescount
-        $purchases = $connection->execute("SELECT weight as wt FROM inventory WHERE DAY(dateissued) = '$day'")->fetchAll('assoc');
+        $purchases = $connection->execute("SELECT totalinventory as wt FROM inventory WHERE DAY(dateissued) = '$day'")->fetchAll('assoc');
 
         $computepurchases = 0;
         foreach ($purchases as $data) {
@@ -523,8 +521,6 @@ class StoreController extends AppController
 
         $result[2] = $computeinv;
 
-        //$result[3] = $connection->execute("SELECT COUNT(sls.salesid) as id, sls.dateissued as dateissued, sls.timeissued as timeissued FROM sales as sls INNER JOIN product as pro ON sls.productid = pro.productid WHERE MONTH(dateissued) = '$month' AND YEAR(dateissued) = '$year' ORDER BY dateissued, timeissued ASC")->fetchAll('assoc');
-
         //transactioncount
         $salesrecord = $connection->execute("SELECT COUNT(salesid) as id FROM sales")->fetchAll('assoc');
         $invrecord = $connection->execute("SELECT COUNT(inventoryid) as id FROM inventory")->fetchAll('assoc');
@@ -535,23 +531,106 @@ class StoreController extends AppController
 
         //barchart
         //sales
-        for($i = 0; $i < 12; $i++) {
+        for ($i = 0; $i < 12; $i++) {
             $mnth = $i + 1;
             $result[5][$i] = $connection->execute("SELECT COUNT(salesid) as id FROM sales WHERE MONTH(dateissued) = '$mnth'")->fetchAll('assoc');
         }
         //purchases
-        for($i = 0; $i < 12; $i++) {
+        for ($i = 0; $i < 12; $i++) {
             $mnth = $i + 1;
             $result[6][$i] = $connection->execute("SELECT COUNT(inventoryid) as id FROM inventory WHERE MONTH(dateissued) = '$mnth'")->fetchAll('assoc');
         }
 
-
-        //$salesrecord = $connection->execute("SELECT COUNT(salesid) as id FROM sales")->fetchAll('assoc');
-
+        $tmpcompute = 0;
+        $tmpcompute2 = 0;
+        $linechartarr = array();
+        $linechartarr = $this->linechartload($year);
+        for ($x = 0; $x < 12; $x++) {
+            $tmpcompute = 0;
+            if ($x == 2) { //per quarter
+                for ($y = 0; $y < 3; $y++) { //3 months index
+                    $tmpcompute = $tmpcompute + $linechartarr[0][$y];
+                    $tmpcompute2 = $tmpcompute2 + $linechartarr[1][$y];
+                }
+                $result[7][0][0] = $tmpcompute;
+                $result[7][1][0] = $tmpcompute2;
+            } else if ($x == 5) {
+                for ($y = 3; $y < 6; $y++) { //3 months index
+                    $tmpcompute = $tmpcompute + $linechartarr[0][$y];
+                    $tmpcompute2 = $tmpcompute2 + $linechartarr[1][$y];
+                }
+                $result[7][0][1] = $tmpcompute2;
+                $result[7][1][1] = $tmpcompute2;
+            } else if ($x == 8) {
+                for ($y = 6; $y < 9; $y++) { //3 months index
+                    $tmpcompute = $tmpcompute + $linechartarr[0][$y];
+                    $tmpcompute2 = $tmpcompute2 + $linechartarr[1][$y];
+                }
+                $result[7][0][2] = $tmpcompute;
+                $result[7][1][2] = $tmpcompute2;
+            } else if ($x == 11) {
+                for ($y = 9; $y < 12; $y++) { //3 months index
+                    $tmpcompute = $tmpcompute + $linechartarr[0][$y];
+                    $tmpcompute2 = $tmpcompute2 + $linechartarr[1][$y];
+                }
+                $result[7][0][3] = $tmpcompute;
+                $result[7][1][3] = $tmpcompute2;
+            }
+        }
 
         echo json_encode($result);
         die();
+    }
 
+    public function linechartload($currentyear)
+    {
+        $this->autoRender = false;
+        $connection = ConnectionManager::get('default');
+
+        $setAresult = array();
+        $setBresult = array();
+        $finalsetresult = array();
+
+        $tmpA = 0;
+        $tmpB = 0;
+
+        $pastyear = $currentyear - 1;
+
+        for ($x=0; $x<12;$x++) {
+            $tmpA = 0;
+            $tmpB = 0;
+            $fmnth = $x + 1;
+            $getdatasetA = $connection->execute("SELECT amountdue as ad FROM sales WHERE YEAR(dateissued) = '$currentyear' AND MONTH(dateissued) = '$fmnth'")->fetchAll('assoc');
+            foreach ($getdatasetA as $data) {
+                $tmpA = $tmpA + (float) str_replace(',', '', $data['ad']);
+            }
+            $setAresult[$x] = $tmpA;
+
+            $getdatasetB = $connection->execute("SELECT amountdue as ad FROM sales WHERE YEAR(dateissued) = '$pastyear' AND MONTH(dateissued) = '$fmnth'")->fetchAll('assoc');
+            foreach ($getdatasetB as $data) {
+                $tmpB = $tmpB + (float) str_replace(',', '', $data['ad']);
+            }
+            $setBresult[$x] = $tmpB;
+        }
+
+        $finalsetresult[0] = $setAresult;
+        $finalsetresult[1] = $setBresult;
+
+        return $finalsetresult;
+    }
+
+    public function deleteprod()
+    {
+         $param_id = $this->request->getData('id');
+         $prod_table = TableRegistry::get('Product');
+         $product = $prod_table->get($param_id);
+
+        if ($prod_table->delete($product)) {
+            $this->Flash->success(__('The product has been deleted.'));
+        } else {
+            $this->Flash->error(__('The product could not be deleted. Please, try again.'));
+        }
+        return $this->redirect(['action' => 'productpage']);
     }
 
      /**
